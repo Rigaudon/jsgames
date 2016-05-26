@@ -176,7 +176,17 @@ socket.on('message2c', function(msg){
 	var received = JSON.parse(msg);
 	//handle here
 	//replace me
-    $('#messages').append($('<li>').text(received.user+": "+received.content));
+    var msgbox = $('#messages');
+    var scrollBottom = false;
+
+    if(msgbox[0].scrollHeight-msgbox.scrollTop()==msgbox.outerHeight()){
+    	scrollBottom = true;
+    }
+	msgbox.append($('<li>').text(received.user+": "+received.content));
+    if(scrollBottom){
+    	$('#messages').scrollTop($('#messages')[0].scrollHeight);
+    }
+
 });
 
 //Client JS Code
