@@ -1,0 +1,143 @@
+body {
+	padding: 0px;    
+	background-color:#222222;
+	font-family: "Roboto";
+}
+
+.box {
+	position: absolute;
+	width: 100%;
+	height: 300px;
+	line-height: 50px;
+	font-size: 50px;
+	text-align: center;
+	left: 150%;
+	top: 100px;
+	margin-left: -25%;
+	color:white;
+}
+
+.msg{
+	display:none;
+	font-size:20px;
+	margin-top:40px;
+}
+
+.c4row{
+	overflow:hidden;
+}
+
+.c4box{
+	background-color:#444444;
+	width:14.2%;
+	border:1px solid white;
+	height:100%;
+	padding:0;
+	margin:0;
+	min-width:85px;
+}
+
+#container {
+	position: absolute;
+	margin: 0px;
+	padding: 0px;
+	width: 99%;
+	height: 99%;
+	overflow: hidden;  
+}
+
+#name_select {
+	left: 25%;
+}
+
+#name_select input[type=text]{
+	border: 0px solid white;
+	border-bottom-width: 2px;
+	color:white;
+	font-family: inherit;
+	font-size:35px;
+	background:transparent;
+	text-align: inherit;
+	text-decoration: none;
+	outline:none;
+	padding-top:30px;
+}
+
+#selectbox {
+	line-height: 1.5em;
+	width:50%;
+}
+
+#selectbox h1{
+	text-align:middle;
+	font-size:30px;
+	padding-bottom: 1em;
+}
+
+#selectbox a{
+	color:black;
+	font-size:40px;
+	background-color:#555555;
+	color:white;
+}
+
+#selectbox a:hover{
+	background-color:lightblue;
+	color:black;
+}
+
+#chatbox{
+	width:23%;
+	height:100%;
+	top:0;
+}
+
+#chatname{
+	color:white;
+}
+
+#messages { 
+	overflow-y:scroll; 
+	color:black;
+	font-size:18px;
+	padding:0;
+	margin:0;
+	height:85%;
+	text-align: left;
+	background-color:white;
+	line-height:1.2em;
+}
+#messages li {
+	word-wrap:break-word; 
+	margin:0;
+	border:0px;
+	background-color:#EEEEEE;
+}
+#messages li:hover{
+	background-color:lightblue;
+}
+#chatbox_main{
+	padding:0;
+}
+#chatbox_main input{ 
+	width:100%; 
+	color:black; 
+	padding-left:10px; 
+	margin:0px; 
+	font-size:16px; 
+}
+#messages h3{
+	margin-top:10px;
+	margin-bottom:4px;
+	font-size:1.5em;
+}
+#connect_four_div{
+	height:100%;
+	width:45%;
+	top:0px;
+	margin-top:20px;
+	margin-bottom:20px;
+}
+#me, #opponent{
+	text-align:middle;
+}
