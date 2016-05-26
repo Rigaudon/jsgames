@@ -27,14 +27,24 @@ body {
     color:white;
 }
 
-.box input{
-	margin-top:30px;
-}
-
 .msg{
 	display:none;
 	font-size:20px;
 	margin-top:40px;
+}
+
+.c4row{
+	overflow-x:hidden;
+}
+
+.c4box{
+	background-color:#444444;
+	width:6.7%;
+	border:1px solid white;
+	height:100%;
+	padding:0;
+	margin:0;
+	min-width:85px;
 }
 
 #container {
@@ -62,30 +72,30 @@ body {
 	outline:none;
 }
 
-#box2 {
+#selectbox {
 	line-height: 1.5em;
 	width:50%;
 }
 
-#box2 h1{
+#selectbox h1{
 	text-align:middle;
 	font-size:30px;
 	padding-bottom: 1em;
 }
 
-#box2 a{
+#selectbox a{
 	color:black;
 	font-size:40px;
 	background-color:#555555;
 	color:white;
 }
 
-#box2 a:hover{
+#selectbox a:hover{
 	background-color:lightblue;
 	color:black;
 }
 
-#box3{
+#chatbox{
 	width:23%;
 	height:100%;
 	top:0;
@@ -106,13 +116,26 @@ body {
 	margin:0;
 	padding:4px;
 	line-height: normal;
-
 }
-#messages li:nth-child(odd) { background-color: #EEEEEE; }
+#messages li:nth-child(odd) { 
+	background-color: #EEEEEE; 
+}
+#messages li:hover{
+	background-color:lightblue;
+}
 #chatbox_main{
 	padding:0;
 }
-#chatbox_main input{ width:100%; color:black; padding-left:10px; margin:0px; font-size:16px; }
+#chatbox_main input{ 
+	width:100%; 
+	color:black; 
+	padding-left:10px; 
+	margin:0px; 
+	font-size:16px; 
+}
+#box4{
+	height:100%;
+}
 </style>
 </head>
 <body>
@@ -122,17 +145,17 @@ body {
 	<input type="text" maxlength="12" id="input_name" />
 	<div id="name_select_msg" class="msg alert"></div>
 </div>
-<div id="box2" class="box">
+<div id="selectbox" class="box">
 		<h1>Select a game</h1>
 		<div class="list-group">
-		<a href="#" class="list-group-item">Connect Four</a>
+		<a href="#" id="select_connect4" class="list-group-item">Connect Four</a>
 		<a href="#" class="list-group-item">Checkers</a>
 		<a href="#" class="list-group-item">Uno</a>
 		<a href="#" class="list-group-item">Chess</a>
 
 	</div>
 </div>
-<div id="box3" class="box">
+<div id="chatbox" class="box">
 			<h1>Public Chat</h1>
 			<ul id="messages"></ul>
 		    <div >
@@ -140,35 +163,92 @@ body {
 		    </div>
 		
 </div>
-<div id="box4" class="box">Div #4</div>
+<div id="box4" class="box">
+	<div class="row c4row">
+		<div class="col-md-1 c4box"></div>
+		<div class="col-md-1 c4box"></div>
+		<div class="col-md-1 c4box"></div>
+		<div class="col-md-1 c4box"></div>
+		<div class="col-md-1 c4box"></div>
+		<div class="col-md-1 c4box"></div>
+		<div class="col-md-1 c4box"></div>
+	</div>
+	<div class="row c4row">
+		<div class="col-md-1 c4box"></div>
+		<div class="col-md-1 c4box"></div>
+		<div class="col-md-1 c4box"></div>
+		<div class="col-md-1 c4box"></div>
+		<div class="col-md-1 c4box"></div>
+		<div class="col-md-1 c4box"></div>
+		<div class="col-md-1 c4box"></div>
+	</div>
+	<div class="row c4row">
+		<div class="col-md-1 c4box"></div>
+		<div class="col-md-1 c4box"></div>
+		<div class="col-md-1 c4box"></div>
+		<div class="col-md-1 c4box"></div>
+		<div class="col-md-1 c4box"></div>
+		<div class="col-md-1 c4box"></div>
+		<div class="col-md-1 c4box"></div>
+	</div>
+	<div class="row c4row">
+		<div class="col-md-1 c4box"></div>
+		<div class="col-md-1 c4box"></div>
+		<div class="col-md-1 c4box"></div>
+		<div class="col-md-1 c4box"></div>
+		<div class="col-md-1 c4box"></div>
+		<div class="col-md-1 c4box"></div>
+		<div class="col-md-1 c4box"></div>
+	</div>
+	<div class="row c4row">
+		<div class="col-md-1 c4box"></div>
+		<div class="col-md-1 c4box"></div>
+		<div class="col-md-1 c4box"></div>
+		<div class="col-md-1 c4box"></div>
+		<div class="col-md-1 c4box"></div>
+		<div class="col-md-1 c4box"></div>
+		<div class="col-md-1 c4box"></div>
+	</div>
+	<div class="row c4row">
+		<div class="col-md-1 c4box"></div>
+		<div class="col-md-1 c4box"></div>
+		<div class="col-md-1 c4box"></div>
+		<div class="col-md-1 c4box"></div>
+		<div class="col-md-1 c4box"></div>
+		<div class="col-md-1 c4box"></div>
+		<div class="col-md-1 c4box"></div>
+	</div>
+</div>
 <div id="box5" class="box">Div #5</div>
 </div>
 <script type="text/javascript">
 //Variables
 var socket = io();
 var usrname = false;
+var activeView = "Login";
+//Can be: Login, Selection Menu, Connect Four
 
-//Server com code
+//Server com for logging in
 function attemptLogin(picked_name){
 	usrname = picked_name;
 	socket.emit('pickname', usrname);
 }
 
+//Login code, moving to selection 
 socket.on('login status', function(status){
 	if(status==1){
 		$("#name_select").animate({
-			left: '-50%'
-		}, 500, function(){
-			$(this).css('left', '150%');
-		});
+			left: '-100%'
+		}, 500);
 
-		$("#box2").animate({
+		$("#selectbox").animate({
 			left: '40%'
 		}, 500);
 
-		$("#box3").animate({
+		$("#chatbox").animate({
 			left: '101%'
 		}, 500);
+		activeView = "Selection Menu";
 	}else if(status==0){
 		//already taken
 		usrname = false;
@@ -198,6 +278,8 @@ socket.on('message2c', function(msg){
 });
 
 //Client JS Code
+
+//Name picking
 $("#input_name").bind('keypress', function(e){
 	if(e.which==13 && this.value!="" && usrname==false){
 		attemptLogin(this.value);
@@ -206,6 +288,7 @@ $("#input_name").bind('keypress', function(e){
 	this.value = this.value.replace(/[^A-Za-z0-9]/g, '');
 });
 
+//Sending messages in main chat
 $("#chatbox_main_msg").bind('keypress', function(e){
 	if(e.which==13 && this.value.trim()!="" && usrname!=false){
 		var m = new Object();
@@ -216,10 +299,40 @@ $("#chatbox_main_msg").bind('keypress', function(e){
 	}
 });
 
+//Clicking on "connect four"
+$("#select_connect4").click(function(){
+	resizeC4();
+	activeView = "Connect Four";
+	$("#selectbox").animate({
+		left: '-50%'
+	}, 500);
+	$("#box4").animate({
+		left: '40%'
+	}, 500);
+});
+
+//Misc chatbox focus
+$("#messages").click(function(){
+	$("#chatbox_main_msg").focus();
+});
+
+//Misc chatbox hover, todo: move to css
 $(".list-group-item").hover(
 	function(){$(this).addClass('active')},
 	function(){$(this).removeClass('active')}
 );
+
+//Correcting size for the connect 4 window.
+function resizeC4(){
+	var setTo = $(".c4box").width();
+	$(".c4row").height(setTo);
+}
+
+$(window).resize(function(){
+	if(activeView=="Connect Four"){
+		resizeC4();
+	}
+})
 
 $(document).ready(function(){
 	$("#name_select").fadeIn(2000);

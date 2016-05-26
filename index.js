@@ -34,6 +34,7 @@ io.on('connection', function(socket){
 		}
   	});
 
+	//TODO: linkify things
   	socket.on('message2s', function(msg){
   		var received = JSON.parse(msg);
   		var usermsg = new Object();
