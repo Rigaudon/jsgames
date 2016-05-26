@@ -1,0 +1,211 @@
+<!doctype html>
+<html>
+<head>
+<title>JS Games by Michael Wu</title>
+<link href='https://fonts.googleapis.com/css?family=Roboto' rel='stylesheet' type='text/css'>
+<script type="text/javascript" src="jquery-2.2.4.min.js"></script>
+<script src="/socket.io/socket.io.js"></script>
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
+
+<style type="text/css">
+body {
+    padding: 0px;    
+    background-color:#222222;
+    font-family: "Roboto";
+}
+
+.box {
+    position: absolute;
+    width: 100%;
+    height: 300px;
+    line-height: 50px;
+    font-size: 50px;
+    text-align: center;
+    left: 150%;
+    top: 100px;
+    margin-left: -25%;
+    color:white;
+}
+
+.box input{
+	margin-top:30px;
+}
+
+.msg{
+	display:none;
+	font-size:20px;
+	margin-top:40px;
+}
+
+#container {
+    position: absolute;
+    margin: 0px;
+    padding: 0px;
+    width: 95%;
+    height: 95%;
+    overflow: hidden;  
+}
+
+#name_select {
+    left: 25%;
+}
+
+#name_select input[type=text]{
+	border: 0px solid white;
+    border-bottom-width: 2px;
+	color:white;
+	font-family: inherit;
+	font-size:35px;
+	background:transparent;
+	text-align: inherit;
+	text-decoration: none;
+	outline:none;
+}
+
+#box2 {
+	line-height: 1.5em;
+}
+
+#box2 h1{
+	text-align:middle;
+	font-size:30px;
+	padding-bottom: 1em;
+}
+
+#box2 a{
+	color:black;
+	font-size:40px;
+	background-color:#555555;
+	color:white;
+}
+
+#box2 a:hover{
+	background-color:lightblue;
+	color:black;
+}
+
+#messages { 
+	overflow-y:scroll; 
+	color:black;
+	font-size:16px;
+	padding:0;
+	margin:0;
+	height:400px;
+	text-align: left;
+	background-color:white;
+}
+#messages li {
+	word-wrap:break-word; 
+	margin:0;
+	padding:4px;
+	line-height: normal;
+
+}
+#messages li:nth-child(odd) { background-color: #EEEEEE; }
+#chatbox_main{
+	padding:0;
+}
+#chatbox_main input{ width:100%; color:black; padding-left:10px; margin:0px; font-size:16px; }
+</style>
+</head>
+<body>
+<div id="container">
+<div id="name_select" class="box">
+	<div> What should we call you? </div>
+	<input type="text" maxlength="12" id="input_name" />
+	<div id="name_select_msg" class="msg alert"></div>
+</div>
+<div id="box2" class="box">
+	<div class="row">
+		<div class="col-md-4">
+		<h1>Select a game</h1>
+		<div class="list-group">
+		<a href="#" class="list-group-item">Connect Four</a>
+		<a href="#" class="list-group-item">Checkers</a>
+		<a href="#" class="list-group-item">Uno</a>
+		<a href="#" class="list-group-item">Chess</a>
+		</div>
+		</div>
+		<div id="chatbox_main" class="col-md-4"> 
+			<h1>Public Chat</h1>
+			<ul id="messages"></ul>
+		    <div >
+		        <input autocomplete="off" class="form-control" type="text" id="chatbox_main_msg"/>
+		    </div>
+		</div>
+	</div>
+</div>
+<div id="box3" class="box">Div #3</div>
+<div id="box4" class="box">Div #4</div>
+<div id="box5" class="box">Div #5</div>
+</div>
+<script type="text/javascript">
+//Variables
+var socket = io();
+var usrname = false;
+
+//Server com code
+function attemptLogin(picked_name){
+	usrname = picked_name;
+	socket.emit('pickname', usrname);
+}
+
+socket.on('login status', function(status){
+	if(status==1){
+		$("#name_select").animate({
+			left: '-50%'
+		}, 500, function(){
+			$(this).css('left', '150%');
+		});
+
+		$("#box2").animate({
+			left: '50%'
+		}, 500);
+	}else if(status==0){
+		//already taken
+		usrname = false;
+		var msg = $("#name_select_msg");
+		msg.addClass('alert-danger');
+		msg.text('That username is already taken!');
+		msg.fadeIn();
+	}
+});
+
+//main chatroom
+socket.on('message2c', function(msg){
+	var received = JSON.parse(msg);
+	//handle here
+	//replace me
+    $('#messages').append($('<li>').text(received.user+": "+received.content));
+});
+
+//Client JS Code
+$("#input_name").bind('keypress', function(e){
+	if(e.which==13 && this.value!="" && usrname==false){
+		attemptLogin(this.value);
+	}
+}).on('input', function(e){
+	this.value = this.value.replace(/[^A-Za-z0-9]/g, '');
+});
+
+$("#chatbox_main_msg").bind('keypress', function(e){
+	if(e.which==13 && this.value!="" && usrname!=false){
+		var m = new Object();
+		m.chatroom = "main";
+		m.message = this.value
+		socket.emit('message2s', JSON.stringify(m));
+		this.value="";
+	}
+});
+
+$(".list-group-item").hover(
+	function(){$(this).addClass('active')},
+	function(){$(this).removeClass('active')}
+);
+
+$(document).ready(function(){
+	$("#name_select").fadeIn(2000);
+});
+</script>
+</body>
+</html>
