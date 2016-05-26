@@ -41,8 +41,8 @@ body {
     position: absolute;
     margin: 0px;
     padding: 0px;
-    width: 95%;
-    height: 95%;
+    width: 99%;
+    height: 99%;
     overflow: hidden;  
 }
 
@@ -64,6 +64,7 @@ body {
 
 #box2 {
 	line-height: 1.5em;
+	width:50%;
 }
 
 #box2 h1{
@@ -84,13 +85,19 @@ body {
 	color:black;
 }
 
+#box3{
+	width:23%;
+	height:100%;
+	top:0;
+}
+
 #messages { 
 	overflow-y:scroll; 
 	color:black;
 	font-size:16px;
 	padding:0;
 	margin:0;
-	height:400px;
+	height:85%;
 	text-align: left;
 	background-color:white;
 }
@@ -116,26 +123,23 @@ body {
 	<div id="name_select_msg" class="msg alert"></div>
 </div>
 <div id="box2" class="box">
-	<div class="row">
-		<div class="col-md-4">
 		<h1>Select a game</h1>
 		<div class="list-group">
 		<a href="#" class="list-group-item">Connect Four</a>
 		<a href="#" class="list-group-item">Checkers</a>
 		<a href="#" class="list-group-item">Uno</a>
 		<a href="#" class="list-group-item">Chess</a>
-		</div>
-		</div>
-		<div id="chatbox_main" class="col-md-4"> 
+
+	</div>
+</div>
+<div id="box3" class="box">
 			<h1>Public Chat</h1>
 			<ul id="messages"></ul>
 		    <div >
 		        <input autocomplete="off" class="form-control" type="text" id="chatbox_main_msg"/>
 		    </div>
-		</div>
-	</div>
+		
 </div>
-<div id="box3" class="box">Div #3</div>
 <div id="box4" class="box">Div #4</div>
 <div id="box5" class="box">Div #5</div>
 </div>
@@ -159,7 +163,11 @@ socket.on('login status', function(status){
 		});
 
 		$("#box2").animate({
-			left: '50%'
+			left: '40%'
+		}, 500);
+
+		$("#box3").animate({
+			left: '101%'
 		}, 500);
 	}else if(status==0){
 		//already taken
@@ -199,7 +207,7 @@ $("#input_name").bind('keypress', function(e){
 });
 
 $("#chatbox_main_msg").bind('keypress', function(e){
-	if(e.which==13 && this.value!="" && usrname!=false){
+	if(e.which==13 && this.value.trim()!="" && usrname!=false){
 		var m = new Object();
 		m.chatroom = "main";
 		m.message = this.value
