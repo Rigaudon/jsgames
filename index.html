@@ -70,6 +70,7 @@ body {
 	text-align: inherit;
 	text-decoration: none;
 	outline:none;
+	padding-top:30px;
 }
 
 #selectbox {
@@ -101,24 +102,26 @@ body {
 	top:0;
 }
 
+#chatname{
+	color:white;
+}
+
 #messages { 
 	overflow-y:scroll; 
 	color:black;
-	font-size:16px;
+	font-size:18px;
 	padding:0;
 	margin:0;
 	height:85%;
 	text-align: left;
 	background-color:white;
+	line-height:1.2em;
 }
 #messages li {
 	word-wrap:break-word; 
 	margin:0;
-	padding:4px;
-	line-height: normal;
-}
-#messages li:nth-child(odd) { 
-	background-color: #EEEEEE; 
+	border:0px;
+	background-color:#EEEEEE;
 }
 #messages li:hover{
 	background-color:lightblue;
@@ -132,6 +135,11 @@ body {
 	padding-left:10px; 
 	margin:0px; 
 	font-size:16px; 
+}
+#messages h3{
+	margin-top:10px;
+	margin-bottom:4px;
+	font-size:1.5em;
 }
 #box4{
 	height:100%;
@@ -155,14 +163,8 @@ body {
 
 	</div>
 </div>
-<div id="chatbox" class="box">
-			<h1>Public Chat</h1>
-			<ul id="messages"></ul>
-		    <div >
-		        <input autocomplete="off" class="form-control" type="text" id="chatbox_main_msg"/>
-		    </div>
+
 		
-</div>
 <div id="box4" class="box">
 	<div class="row c4row">
 		<div class="col-md-1 c4box"></div>
@@ -219,7 +221,16 @@ body {
 		<div class="col-md-1 c4box"></div>
 	</div>
 </div>
-<div id="box5" class="box">Div #5</div>
+<div id="chatbox" class="box">
+			<h1>Chat</h1>
+			<ul id="messages"></ul>
+		    <div class="input-group input-group-lg">
+  				<span class="input-group-addon label-primary" id="chatname">Username:</span>
+		        <input autocomplete="off" class="form-control" type="text" id="chatbox_main_msg" placeholder="Enter message..."/>
+		    </div>
+
+</div>
+
 </div>
 <script type="text/javascript">
 //Variables
@@ -227,6 +238,7 @@ var socket = io();
 var usrname = false;
 var activeView = "Login";
 //Can be: Login, Selection Menu, Connect Four
+var chatLastUser = "";
 
 //Server com for logging in
 function attemptLogin(picked_name){
@@ -249,6 +261,7 @@ socket.on('login status', function(status){
 			left: '101%'
 		}, 500);
 		activeView = "Selection Menu";
+		$("#chatname").text(usrname+":");
 	}else if(status==0){
 		//already taken
 		usrname = false;
@@ -270,7 +283,16 @@ socket.on('message2c', function(msg){
     if(msgbox[0].scrollHeight-msgbox.scrollTop()==msgbox.outerHeight()){
     	scrollBottom = true;
     }
-	msgbox.append($('<li>').text(received.user+": "+received.content));
+    var adiv = $("<div>");
+    if(received.user!=chatLastUser){
+    	var aspan = $("<h3>").append($("<span class='label label-primary'>").text(received.user));
+    	adiv.append(aspan);
+    	chatLastUser = received.user;
+    }
+    var ali = $('<li class="list-group-item">').text(received.content);
+    adiv.append(ali);
+
+	msgbox.append(adiv);
     if(scrollBottom){
     	$('#messages').scrollTop($('#messages')[0].scrollHeight);
     }
@@ -312,9 +334,11 @@ $("#select_connect4").click(function(){
 });
 
 //Misc chatbox focus
+/*
 $("#messages").click(function(){
 	$("#chatbox_main_msg").focus();
 });
+*/
 
 //Misc chatbox hover, todo: move to css
 $(".list-group-item").hover(
