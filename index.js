@@ -121,6 +121,7 @@ io.on('connection', function(socket){
 //Chatroom: timestamps, message when someone joins, how many online, who is typing, different chat rooms by #
 //Back button
 //Implement games
+//refactor ids 
 //Implement mouse tracking in game
 //Implement database
 //Make mobile version

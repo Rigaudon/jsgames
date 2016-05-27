@@ -18,11 +18,15 @@
 		</div>
 
 		<div id="chatmain" class="box">
-			<h1>Chat</h1>
+			<div class="panel panel-default">
+			<div class="panel-heading">Chat</div>
+			<div class="panel-body">
 			<ul id="messages"></ul>
-			<div class="input-group input-group-lg">
+			<div class="input-group">
 				<span class="input-group-addon" id="chatname">Username:</span>
 				<input autocomplete="off" class="form-control" type="text" id="chatbox_main_msg" placeholder="Enter message..."/>
+			</div>
+			</div>
 			</div>
 		</div>
 
@@ -45,16 +49,36 @@
 		</div>
 
 		<div id="creategamebox" class="box">
+		<!--
 		<div class="input-group input-group-lg" id="joingamenum">
 			<span class="input-group-addon">Join a Room</span>
 			<input autocomplete="off" class="form-control" type="text" id="joinroomnum" placeholder="Room # and press Enter"/>
-		</div>		
-		<a class="btn btn-success" href="#" role="button">Create a Room</a>
+		</div>
+		-->		
+		<a class="btn btn-success" href="#" role="button" id="create_room_button">Create a Room</a>
 		</div>
 
 		<div class="box" id="onlinebox">
+		<div class="panel panel-default">
+		<div class="panel-heading">
 		<span class="text">Online</span><span class="badge" id="numonline">0</span>
+		</div>
+		<div class="panel-body">
 		<div id="onlinelist"></div>
+		</div>
+		</div>
+		</div>
+
+		<div class="box" id="dim_div">
+		
+		</div>
+
+		<div id="create_room_box" class="box">
+		<a href="#" id="close_btn" class="btn btn-default">Close</a>
+		<div class="panel panel-default" id="create_room_panel">
+		<div class="panel-heading">Create a Room</div>
+		<div class="panel-body">Body</div>
+		</div>
 		</div>
 
 		<div id="connect_four_div" class="box">
@@ -288,6 +312,26 @@ $("#chatbox_main_msg").bind('keypress', function(e){
 		socket.emit('message2s', JSON.stringify(m));
 		this.value="";
 	}
+});
+
+//bring up creating room screen
+$("#create_room_button").click(function(){
+	$("#dim_div").css('left', '25%');
+	$("#dim_div").css('background-color','rgba(0,0,0,0.9)')
+	$("#create_room_box").animate({
+		left: '31%'
+	}, 500);
+
+});
+
+//close creating room screen
+$("#close_btn").click(function(){
+	$("#create_room_box").animate({
+		left: '125%'
+	}, 500, function(){
+		$("#dim_div").css('left', '125%');
+		$("#dim_div").css('background-color','rgba(0,0,0,0)')
+	});
 });
 
 /*
