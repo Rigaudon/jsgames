@@ -7,8 +7,6 @@ body {
 .box {
 	position: absolute;
 	width: 100%;
-	height: 300px;
-	line-height: 50px;
 	font-size: 50px;
 	text-align: center;
 	left: 150%;
@@ -21,6 +19,9 @@ body {
 	display:none;
 	font-size:20px;
 	margin-top:40px;
+	width:50%;
+	position:absolute;
+	left:25%;
 }
 
 .c4row{
@@ -63,28 +64,6 @@ body {
 	padding-top:30px;
 }
 
-#selectbox {
-	line-height: 1.5em;
-	width:50%;
-}
-
-#selectbox h1{
-	text-align:middle;
-	font-size:30px;
-	padding-bottom: 1em;
-}
-
-#selectbox a{
-	color:black;
-	font-size:40px;
-	background-color:#555555;
-	color:white;
-}
-
-#selectbox a:hover{
-	background-color:lightblue;
-	color:black;
-}
 
 #chatbox{
 	width:23%;
@@ -100,37 +79,27 @@ body {
 	overflow-y:scroll; 
 	color:black;
 	font-size:18px;
-	padding:0;
+	padding:5px;
+	padding-left:10px;
 	margin:0;
 	height:85%;
 	text-align: left;
 	background-color:white;
-	line-height:1.2em;
+	line-height:1.5em;
 }
-#messages li {
+#messages span {
 	word-wrap:break-word; 
 	margin:0;
 	border:0px;
-	background-color:#EEEEEE;
 }
-#messages li:hover{
-	background-color:lightblue;
-}
-#chatbox_main{
-	padding:0;
-}
+
 #chatbox_main input{ 
 	width:100%; 
 	color:black; 
-	padding-left:10px; 
 	margin:0px; 
 	font-size:16px; 
 }
-#messages h3{
-	margin-top:10px;
-	margin-bottom:4px;
-	font-size:1.5em;
-}
+
 #connect_four_div{
 	height:100%;
 	width:45%;
@@ -138,6 +107,58 @@ body {
 	margin-top:20px;
 	margin-bottom:20px;
 }
-#me, #opponent{
-	text-align:middle;
+
+#chatmain{
+	padding-left:0px;
+	width:20%;
+	top:0px;
+	height:100%;
+}
+
+.contentbox{
+	width:60%;
+	height:75%;
+}
+
+#gameroombox{
+	border-bottom:2px solid white;
+	overflow:hidden;
+}
+
+#gameroomtable{
+	margin-top:20px;
+	font-size:20px;
+	border-top:2px solid white;
+}
+
+#gameroomtable th, td{
+	text-align:center;
+}
+
+#gameroomtable th:nth-child(odd){
+	background-color:#444444;
+}
+#gameroomtable th:nth-child(even){
+	background-color:#333333;
+}
+
+#placeholder{
+	font-style: italic;
+	color:#888888;
+}
+
+#creategamebox{
+	top:87%;
+	width:50%;
+	font-size:50px;
+}
+
+#creategamebox a{
+	font-size:25px;
+}
+
+#joingamenum{
+	width:40%;
+	margin-left:auto;
+	margin-right:auto;
 }

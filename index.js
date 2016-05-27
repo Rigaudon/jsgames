@@ -43,6 +43,7 @@ io.on('connection', function(socket){
   		var usermsg = new Object();
   		usermsg.user = client_names[client_sockets.indexOf(socket)];
   		usermsg.content = received.message;
+  		usermsg.color = received.color;
   		if(received.chatroom=="main"){
 	  		console.log("Got message from "+usermsg.user+": "+msg);
 	  		io.emit('message2c', JSON.stringify(usermsg));
@@ -51,35 +52,6 @@ io.on('connection', function(socket){
   		}
   	});
 
-  	//Joining rooms
-  	socket.on('join', function(msg){
-  		//Replace me
-  		if(msg=='Connect Four'){
-  			if(gameroom==false){
-  				//join as p1
-  				//replace with predefined obj on rewrite
-  				gameroom = Object();
-  				gameroom.gametype = 'Connect Four';
-  				gameroom.player1 = socket;
-  				gameroom.player2 = false;
-  				gameroom.board = [[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0]];
-				gameroom.turn = 0;
-				gameroom.id = 'Connect Four';
-				console.log('User '+client_names[client_sockets.indexOf(socket)]+' joined as Player 1 in Connect 4');
-				gameroom.player1.emit('c4gamestate', 'waiting');
-  			}else if(gameroom.player2==false){
-  				//join as p2
-  				gameroom.player2 = socket;
-  				gameroom.turn = 1;
-  				console.log('User '+client_names[client_sockets.indexOf(socket)]+' joined as Player 2 in Connect 4');
-  				gameroom.player2.emit('c4opponent_name', client_names[client_sockets.indexOf(gameroom.player1)]);
-  				gameroom.player1.emit('c4opponent_name', client_names[client_sockets.indexOf(gameroom.player2)]);
-  				gameroom.player2.emit('c4gamestate', 'waiting');
-  				gameroom.player1.emit('c4gamestate', 'turn'+gameroom.turn);
-  				gameroom.player2.emit('c4gamestate', 'turn'+gameroom.turn);
-  			}
-  		}
-  	});
 });
 
 

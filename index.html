@@ -6,6 +6,7 @@
 	<script type="text/javascript" src="jquery-2.2.4.min.js"></script>
 	<script src="/socket.io/socket.io.js"></script>
 	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
+  	<script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
 	<link rel="stylesheet" href="main.css">
 </head>
 <body>
@@ -13,18 +14,42 @@
 		<div id="name_select" class="box">
 			<div> What should we call you? </div>
 			<input type="text" maxlength="12" id="input_name" />
-			<div id="name_select_msg" class="msg alert"></div>
+			<div id="name_select_msg" class="msg alert alert-dismissible"></div>
 		</div>
 
-		<div id="selectbox" class="box">
-			<h1>Select a game</h1>
-			<div class="list-group">
-				<a href="#" id="select_connect4" class="list-group-item">Connect Four</a>
-				<a href="#" class="list-group-item">Checkers</a>
-				<a href="#" class="list-group-item">Uno</a>
-				<a href="#" class="list-group-item">Chess</a>
-
+		<div id="chatmain" class="box">
+			<h1>Chat</h1>
+			<ul id="messages"></ul>
+			<div class="input-group input-group-lg">
+				<span class="input-group-addon" id="chatname">Username:</span>
+				<input autocomplete="off" class="form-control" type="text" id="chatbox_main_msg" placeholder="Enter message..."/>
 			</div>
+		</div>
+
+		<div id="gameroombox" class="box contentbox">
+			Game rooms
+			<div class="table-responsive">
+				<table class="table" id="gameroomtable">
+					<thead><tr>
+						<th width="10%">Room ID</th>
+						<th width="30%">Room Name</th>
+						<th width="20%">Game</th>
+						<th width="30%">Players</th>
+						<th width="10%">Join Game</th>
+					</tr></thead>
+					<tbody>
+					<tr id="placeholder"><td colspan="5">No games to display</td></tr>
+					</tbody>
+				</table>
+			</div>
+		</div>
+
+		<div id="creategamebox" class="box">
+		<div class="input-group input-group-lg" id="joingamenum">
+			<span class="input-group-addon">Join a Room</span>
+			<input autocomplete="off" class="form-control" type="text" id="joinroomnum" placeholder="Room # and press Enter"/>
+		</div>		
+		<a class="btn btn-success" href="#" role="button">Create a Room</a>
 		</div>
 
 		<div id="connect_four_div" class="box">
@@ -88,23 +113,20 @@
 			<div id="me" class="label label-default">Me</div>
 		</div>
 
-		<div id="chatbox" class="box">
-			<h1>Chat</h1>
-			<ul id="messages"></ul>
-			<div class="input-group input-group-lg">
-				<span class="input-group-addon label-primary" id="chatname">Username:</span>
-				<input autocomplete="off" class="form-control" type="text" id="chatbox_main_msg" placeholder="Enter message..."/>
-			</div>
-		</div>
-
 	</div>
 	<script type="text/javascript">
 //Variables
 var socket = io();
 var usrname = false;
-var activeView = "Login";
-//Can be: Login, Selection Menu, Connect Four
-var chatLastUser = "";
+var myColor;
+var colors = {}
+colors["#337AB7"] = "primary";
+colors["#5CB85C"] = "success";
+colors["#5BC0DE"] = "info";
+colors["#F0AD4E"] = "warning";
+colors["#D9534F"] = "danger";
+var gameRooms = {};
+gameRooms.active = 0;
 
 //Server com for logging in
 function attemptLogin(picked_name){
@@ -115,30 +137,44 @@ function attemptLogin(picked_name){
 //Login code, moving to selection 
 socket.on('login status', function(status){
 	if(status==1){
+		//Name select goes away
 		$("#name_select").animate({
 			left: '-100%'
 		}, 500);
 
-		$("#selectbox").animate({
+		//Chat box comes in
+		$("#chatmain").animate({
+			left: '105%'
+		}, 500);
+
+		//Game roomes come in
+		$("#gameroombox").animate({
 			left: '40%'
 		}, 500);
 
-		$("#chatbox").animate({
-			left: '101%'
+		//Create room/join number comes in
+		$("#creategamebox").animate({
+			left: '45%'
 		}, 500);
-		activeView = "Selection Menu";
+
 		$("#chatname").text(usrname+":");
+
+		var cols = ['#337AB7', '#5CB85C', '#5BC0DE', '#F0AD4E', '#D9534F'];
+		myColor = cols[Math.floor(Math.random()*cols.length)];
+		$("#chatname").addClass('label-'+colors[myColor]);
+		
 	}else if(status==0){
 		//already taken
 		usrname = false;
 		var msg = $("#name_select_msg");
 		msg.addClass('alert-danger');
 		msg.text('That username is already taken!');
-		msg.fadeIn();
+		msg.fadeIn().delay(1000).fadeOut("slow");
 	}
 });
 
 //main chatroom
+
 socket.on('message2c', function(msg){
 	var received = JSON.parse(msg);
 	//handle here
@@ -149,13 +185,11 @@ socket.on('message2c', function(msg){
 	if(msgbox[0].scrollHeight-msgbox.scrollTop()==msgbox.outerHeight()){
 		scrollBottom = true;
 	}
+
 	var adiv = $("<div>");
-	if(received.user!=chatLastUser){
-		var aspan = $("<h3>").append($("<span class='label label-primary'>").text(received.user));
-		adiv.append(aspan);
-		chatLastUser = received.user;
-	}
-	var ali = $('<li class="list-group-item">').text(received.content);
+	var aspan = $("<span style='color:"+received.color+";font-weight:bold'>").text(received.user+": ");
+	adiv.append(aspan);
+	var ali = $('<span>').text(received.content);
 	adiv.append(ali);
 
 	msgbox.append(adiv);
@@ -165,15 +199,27 @@ socket.on('message2c', function(msg){
 
 });
 
-//Connect Four receiving from server
-socket.on('c4gamestate', function(msg){
-	if(msg=='waiting'){
-		$("#me").text(usrname+" (Me)");
+//add a room to the list of available rooms
+function addRoom(room){
+	var tr = $("<tr>");
+	tr.append($("<td>").text(room.id));
+	tr.append($("<td>").text(room.name));
+	tr.append($("<td>").text(room.game));
+	tr.append($("<td>").text(room.players));
+	tr.append($("<td>").text("Join"));
+	gameRooms[room.id] = tr;
+	gameRooms.active++;
+	$('#gameroomtable > tbody:last-child').append(tr);
+	$("#placeholder").css('display', 'none');
+}
+//remove a room from the list
+function removeRoom(roomId){
+	gameRooms[roomId].remove();
+	gameRooms.active--;
+	if(gameRooms.active==0){
+		$("#placeholder").css('display', 'inline');
 	}
-});
-socket.on('c4opponent_name', function(msg){
-	$("#opponent").text(msg);
-});
+}
 
 //Client JS Code
 
@@ -192,11 +238,12 @@ $("#chatbox_main_msg").bind('keypress', function(e){
 		var m = new Object();
 		m.chatroom = "main";
 		m.message = this.value
+		m.color = myColor;
 		socket.emit('message2s', JSON.stringify(m));
 		this.value="";
 	}
 });
-
+/*
 //Clicking on "connect four"
 $("#select_connect4").click(function(){
 	resizeC4();
@@ -210,14 +257,14 @@ $("#select_connect4").click(function(){
 		left: '40%'
 	}, 500);
 });
-
+*/
 //Misc chatbox focus
 /*
 $("#messages").click(function(){
 	$("#chatbox_main_msg").focus();
 });
 */
-
+/*
 //Misc chatbox hover, todo: move to css
 $(".list-group-item").hover(
 	function(){$(this).addClass('active')},
@@ -235,7 +282,7 @@ $(window).resize(function(){
 		resizeC4();
 	}
 })
-
+*/
 $(document).ready(function(){
 	$("#name_select").fadeIn(2000);
 });
