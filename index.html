@@ -31,11 +31,11 @@
 			<div class="table-responsive">
 				<table class="table" id="gameroomtable">
 					<thead><tr>
-						<th width="10%">Room ID</th>
+						<th width="10%">Room #</th>
 						<th width="30%">Room Name</th>
 						<th width="20%">Game</th>
 						<th width="30%">Players</th>
-						<th width="10%">Join Game</th>
+						<th width="10%">Join</th>
 					</tr></thead>
 					<tbody>
 					<tr id="placeholder"><td colspan="5">No games to display</td></tr>
@@ -50,6 +50,11 @@
 			<input autocomplete="off" class="form-control" type="text" id="joinroomnum" placeholder="Room # and press Enter"/>
 		</div>		
 		<a class="btn btn-success" href="#" role="button">Create a Room</a>
+		</div>
+
+		<div class="box" id="onlinebox">
+		<span class="text">Online</span><span class="badge" id="numonline">0</span>
+		<div id="onlinelist"></div>
 		</div>
 
 		<div id="connect_four_div" class="box">
@@ -149,20 +154,31 @@ socket.on('login status', function(status){
 
 		//Game roomes come in
 		$("#gameroombox").animate({
-			left: '40%'
+			left: '42.5%'
 		}, 500);
 
 		//Create room/join number comes in
 		$("#creategamebox").animate({
-			left: '45%'
+			left: '47%'
 		}, 500);
 
+		//Who's online comes in
+		$("#onlinebox").animate({
+			left: '25%'
+		}, 500);
+
+		//Set chatbox username
 		$("#chatname").text(usrname+":");
 
+		//Give user a random color
 		var cols = ['#337AB7', '#5CB85C', '#5BC0DE', '#F0AD4E', '#D9534F'];
 		myColor = cols[Math.floor(Math.random()*cols.length)];
+
+		//send color
+		socket.emit('choosecolor', myColor);
 		$("#chatname").addClass('label-'+colors[myColor]);
-		
+		socket.emit('joinchatroom', 'main');
+
 	}else if(status==0){
 		//already taken
 		usrname = false;
@@ -173,9 +189,11 @@ socket.on('login status', function(status){
 	}
 });
 
-//main chatroom
-
+//main chatroom receiving
 socket.on('message2c', function(msg){
+	if(!usrname){
+		return false;
+	}
 	var received = JSON.parse(msg);
 	//handle here
 	//replace me
@@ -197,6 +215,33 @@ socket.on('message2c', function(msg){
 		$('#messages').scrollTop($('#messages')[0].scrollHeight);
 	}
 
+});
+
+//updating online users
+socket.on('onlineUsers', function(msg){
+	var received = JSON.parse(msg);
+	var list = $("#onlinelist");
+	list.empty();
+	for(var i=0;i<received[0].length;i++){
+		list.append($("<span>").css('color',received[1][i]).text(received[0][i]));
+	}
+	$("#numonline").text(received[0].length);
+});
+
+//updating chat when user joins
+socket.on('userJoinMainChat', function(username){
+	var txt = username;
+	if(username==usrname){
+		txt+=" (You)";
+	}
+	txt+=" joined the room";
+	$("#messages").append($("<div class='subtle'>").text(txt));
+});
+
+//updating chat when user leaves; TODO: Make this apply for all chats
+socket.on('userDisconnect', function(username){
+	var txt = username+" left the room";
+	$("#messages").append($("<div class='subtle'>").text(txt));
 });
 
 //add a room to the list of available rooms
@@ -221,6 +266,7 @@ function removeRoom(roomId){
 	}
 }
 
+
 //Client JS Code
 
 //Name picking
@@ -243,6 +289,7 @@ $("#chatbox_main_msg").bind('keypress', function(e){
 		this.value="";
 	}
 });
+
 /*
 //Clicking on "connect four"
 $("#select_connect4").click(function(){
@@ -285,6 +332,7 @@ $(window).resize(function(){
 */
 $(document).ready(function(){
 	$("#name_select").fadeIn(2000);
+	$("#input_name").focus();
 });
 </script>
 </body>

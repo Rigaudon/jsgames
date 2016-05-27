@@ -3,10 +3,71 @@ var app = express();
 app.use(express.static(__dirname+"/"))
 var http = require('http').Server(app);
 var io = require('socket.io')(http);
-var client_sockets = [];
-var client_names = [];
 //var gamerooms = [];
 var gameroom = false;
+
+var clients = Object();
+clients.sockets = [];
+clients.names = [];
+clients.colors = [];
+clients.online = 0;
+clients.addClient = function(socket, name){
+	clients.sockets.push(socket);
+	clients.names.push(name);
+	clients.colors.push('#FFFFFF');
+	socket.emit('login status', 1);
+	console.log('User '+name+' logged in');
+	clients.online++;
+	clients.broadcastOnlineUsers();
+}
+clients.removeClient = function(socket){
+	var i = clients.sockets.indexOf(socket);
+	if(i!=-1){
+		console.log('User '+clients.names[i]+' disconnected');
+		io.emit('userDisconnect', clients.names[i]);
+		clients.sockets.splice(i, 1);
+		clients.names.splice(i, 1);
+		clients.colors.splice(i,1);
+		clients.online--;
+		clients.broadcastOnlineUsers();
+	}else{
+		//error
+	}
+}
+clients.name_available = function(name){
+	return clients.names.indexOf(name)==-1;
+}
+clients.getNameFromSocket = function(socket){
+	var i = clients.sockets.indexOf(socket);
+	if(i!=-1){
+		return clients.names[i];
+	}else{
+		return false;
+	}
+}
+clients.getSocketFromName = function(name){
+	var i = clients.names.indexOf(name);
+	if(i!=-1){
+		return clients.sockets[i];
+	}else{
+		return false;
+	}
+}
+clients.setColor = function(userSocket, color){
+	var i = clients.sockets.indexOf(userSocket);
+	if(i!=-1){
+		console.log("Set user color to "+color);
+		clients.colors[i] = color;
+		clients.broadcastOnlineUsers();
+	}else{
+		return false;
+	}
+}
+clients.broadcastOnlineUsers = function(){
+	io.emit('onlineUsers',JSON.stringify([clients.names, clients.colors]));
+}
+
+//consider using clients.sockets instead of io.emit
 
 app.get('/', function(req, res){
   res.sendFile(__dirname + '/index.html');
@@ -15,11 +76,8 @@ app.get('/', function(req, res){
 io.on('connection', function(socket){
 	socket.on('pickname', function(name){
 		console.log('User attempted to pick name '+name);
-		if(name_available(name)){
-			client_sockets.push(socket);
-			client_names.push(name);
-			socket.emit('login status', 1);
-			console.log('User '+name+' logged in');
+		if(clients.name_available(name)){
+			clients.addClient(socket, name);
 		}else{
 			socket.emit('login status', 0);
 			console.log('Username '+name+' was already taken.');
@@ -27,21 +85,14 @@ io.on('connection', function(socket){
 	});
 
 	socket.on('disconnect', function(){
-		var i = client_sockets.indexOf(socket);
-		if(i!=-1){
-			console.log('User '+client_names[i]+' disconnected');
-			client_sockets.splice(i, 1);
-			client_names.splice(i, 1);
-		}else{
-			//error
-		}
+		clients.removeClient(socket);
   	});
 
-	//TODO: linkify things
+	//TODO: linkify things, move this to clients object?
   	socket.on('message2s', function(msg){
   		var received = JSON.parse(msg);
   		var usermsg = new Object();
-  		usermsg.user = client_names[client_sockets.indexOf(socket)];
+  		usermsg.user = clients.getNameFromSocket(socket);
   		usermsg.content = received.message;
   		usermsg.color = received.color;
   		if(received.chatroom=="main"){
@@ -52,22 +103,27 @@ io.on('connection', function(socket){
   		}
   	});
 
+  	//set the user's color
+  	socket.on('choosecolor', function(col){
+  		clients.setColor(socket, col);
+  	});
+
+  	socket.on('joinchatroom', function(room){
+  		if(room=="main"){
+  			io.emit('userJoinMainChat', clients.getNameFromSocket(socket));
+  		}
+  	});
 });
 
 
-//Fixme: logging in, turning server off/on, but client stays active, lets another person log in with same name... or not?
-function name_available(name){
-	//also check if valid char?
-	return client_names.indexOf(name)==-1;
-}
 
 //TODO:
 //Chatroom: timestamps, message when someone joins, how many online, who is typing, different chat rooms by #
 //Back button
-//Redo selection into room selection*
 //Implement games
 //Implement mouse tracking in game
 //Implement database
+//Make mobile version
 
 http.listen(3000, function(){
   console.log('Listening on port 3000');

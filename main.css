@@ -24,6 +24,10 @@ body {
 	left:25%;
 }
 
+.contentbox{
+	width:60%;
+	height:75%;
+}
 .c4row{
 	overflow:hidden;
 }
@@ -64,7 +68,6 @@ body {
 	padding-top:30px;
 }
 
-
 #chatbox{
 	width:23%;
 	height:100%;
@@ -92,7 +95,11 @@ body {
 	margin:0;
 	border:0px;
 }
-
+#messages .subtle{
+	text-align:center;
+	font-style:italic;
+	color:#BBBBBB;
+}
 #chatbox_main input{ 
 	width:100%; 
 	color:black; 
@@ -113,11 +120,6 @@ body {
 	width:20%;
 	top:0px;
 	height:100%;
-}
-
-.contentbox{
-	width:60%;
-	height:75%;
 }
 
 #gameroombox{
@@ -161,4 +163,32 @@ body {
 	width:40%;
 	margin-left:auto;
 	margin-right:auto;
+}
+
+#onlinebox{
+	height:80%;
+	width:15%;
+	overflow:hidden;
+}
+
+#onlinebox .text{
+	font-size:35px;
+	height:10%;
+}
+
+#numonline{
+	font-size:25px;
+	margin-left:10px;
+}
+
+#onlinelist{
+	height:90%;
+	background-color:#333333;
+	padding:10px;
+}
+
+#onlinelist span{
+	font-size:20px;
+	float:left;
+	margin-left:15px;
 }
