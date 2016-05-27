@@ -1,13 +1,20 @@
+@font-face{
+	font-family: "adobe clean";
+	src: url("AdobeClean-Regular.otf") format("opentype");
+}
+
 body {
 	padding: 0px;    
 	background-color:#222222;
-	font-family: "Roboto";
+	font-family: "adobe clean";
+	line-height:1;
 }
 
 .box {
 	position: absolute;
 	width: 100%;
 	font-size: 50px;
+	font-size: 3vw;
 	text-align: center;
 	left: 150%;
 	top: 100px;
@@ -18,6 +25,7 @@ body {
 .msg{
 	display:none;
 	font-size:20px;
+	font-size:2vw;
 	margin-top:40px;
 	width:50%;
 	position:absolute;
@@ -48,13 +56,16 @@ body {
 }
 
 .panel-heading{
-	height:10%;
-	padding:0;
+	padding-top:20px;
 }
 
 .panel-body{
 	padding:0;
 	height:90%;
+}
+
+.input-group .glyphicon{
+	top:0px;
 }
 
 #container {
@@ -68,6 +79,8 @@ body {
 
 #name_select {
 	left: 25%;
+	font-size:50px;
+	font-size:5vw;
 }
 
 #name_select input[type=text]{
@@ -76,11 +89,12 @@ body {
 	color:white;
 	font-family: inherit;
 	font-size:35px;
+	font-size:3.5vw;
 	background:transparent;
 	text-align: inherit;
 	text-decoration: none;
 	outline:none;
-	padding-top:30px;
+	padding-top:50px;
 }
 
 #chatbox{
@@ -101,6 +115,7 @@ body {
 	overflow-y:scroll; 
 	color:black;
 	font-size:18px;
+	font-size:1.3vw;
 	padding:5px;
 	padding-left:10px;
 	margin:0;
@@ -125,6 +140,7 @@ body {
 	color:black; 
 	margin:0px; 
 	font-size:16px; 
+	/*font-size:1.1vw;*/
 	z-index: 0;
 }
 
@@ -156,12 +172,14 @@ body {
 #gameroomtable{
 	margin-top:20px;
 	font-size:20px;
+	font-size:2vw;
 	border-top:2px solid white;
 }
 
 #gameroomtable th, td{
 	text-align:center;
 	font-size:16px;
+	font-size:1vw;
 }
 
 #gameroomtable th:nth-child(odd){
@@ -180,10 +198,12 @@ body {
 	top:87%;
 	width:50%;
 	font-size:50px;
+	font-size:5vw;
 }
 
 #creategamebox a{
 	font-size:25px;
+	font-size:2.1vw;
 }
 
 #joingamenum{
@@ -200,15 +220,17 @@ body {
 
 #onlinebox .text{
 	font-size:35px;
+	font-size:2.5vw;
 	height:10%;
 }
 
 #onlinebox .panel-heading{
-	padding:0;
+	height:10%;
 }
 
 #numonline{
 	font-size:25px;
+	font-size:1.5vw;
 	margin-left:10px;
 }
 
@@ -220,6 +242,7 @@ body {
 
 #onlinelist span{
 	font-size:20px;
+	font-size:1.5vw;
 	float:left;
 	margin-left:15px;
 }
@@ -234,26 +257,44 @@ body {
 	margin-left:auto;
 	margin-right:auto;
 	width:40%;
-	height:40%;
+	height:55%;
 	top:25%;
 }
 
 #create_room_box .panel-heading{
 	background-color:#222222;
 	color:white;
-	height:25%;
+	height:20%;
+	font-size:3vw;
 }
 
 #create_room_box .panel-body{
 	background-color:#444444;
 	color:white;
-	height:75%;
+	height:80%;
+}
+
+#create_room_box .row{
+	height:16.6%;
+	margin-left:auto;
+	margin-right:auto;
+	width:85%;
+}
+
+#create_room_box .filter-option{
+	padding-top:4px;
+}
+
+#create_room_button2{
+	font-size:2.5vw;
 }
 
 #create_room_panel{
 	font-size:40px;	
+	font-size:3vw;
 	height:100%;
 }
+
 
 #close_btn{
 	position:absolute;
@@ -264,6 +305,7 @@ body {
 	text-align: center;
 	padding: 6px 0;
 	font-size: 12px;
+	/*font-size:1vw;*/
 	line-height: 1.42;
 	border-radius: 15px
 }
