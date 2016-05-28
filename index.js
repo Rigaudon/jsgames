@@ -3,7 +3,10 @@ var app = express();
 app.use(express.static(__dirname+"/"))
 var http = require('http').Server(app);
 var io = require('socket.io')(http);
-//var gamerooms = [];
+var validGames = ["Connect Four"];
+var validPlayers = {};
+validPlayers["Connect Four"] = ["2"];
+
 var gameroom = false;
 
 var clients = Object();
@@ -72,7 +75,12 @@ clients.broadcastOnlineUsers = function(){
 app.get('/', function(req, res){
   res.sendFile(__dirname + '/index.html');
 });
-//TODO: REPLACE WITH HASHTABLE LATER
+
+function validStr(str){
+	//TODO: Implement me
+	return true;
+}
+
 io.on('connection', function(socket){
 	socket.on('pickname', function(name){
 		console.log('User attempted to pick name '+name);
@@ -111,6 +119,46 @@ io.on('connection', function(socket){
   	socket.on('joinchatroom', function(room){
   		if(room=="main"){
   			io.emit('userJoinMainChat', clients.getNameFromSocket(socket));
+  		}
+  	});
+
+  	socket.on('makeRoom', function(room){
+  		var r = JSON.parse(room);
+  		//server side validation
+  		var errors = 0;
+  		if(r.name.length==0){
+  			errors++;
+  			console.log("Error making room: name was empty.");  
+  		}
+  		if(r.name.length>20){
+  			errors++;
+  			console.log("Error making room: name was too long: "+ r.name);
+  		}
+  		if(r.pw.length>20){
+  			errors++;
+  			console.log("Error making room: password was too long: "+r.pw);
+  		}
+  		if(!validStr(r.name) || !validStr(r.pw)){
+  			errors++;
+  			console.log("Error making room: name/pw was invalid.");
+  		}
+  		if(validGames.indexOf(r.gameType)==-1){
+  			errors++;
+  			console.log("Error making room: Invalid game type: "+r.gameType);
+  		}else{
+  			if(validPlayers[r.gameType].indexOf(r.numPlayers)==-1){
+  				errors++;
+  				console.log("Error making room: number of players was invalid: "+r.numPlayers);
+  			}
+  		}
+
+  		if(errors==0){
+  			//make room
+  			console.log("Making room");
+  			socket.emit('makeRoomResponse', 1);
+  		}else{
+  			console.log("There were "+errors+" errors.");
+  			socket.emit('makeRoomResponse', 0);
   		}
   	});
 });

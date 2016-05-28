@@ -295,6 +295,15 @@ body {
 	height:100%;
 }
 
+#createmsg{
+	width:100%;
+	left:0%;
+}
+
+#loading{
+	display:none;
+	margin-top:40px;
+}
 
 #close_btn{
 	position:absolute;
@@ -305,7 +314,7 @@ body {
 	text-align: center;
 	padding: 6px 0;
 	font-size: 12px;
-	/*font-size:1vw;*/
+	font-size:1vw;
 	line-height: 1.42;
 	border-radius: 15px
 }
