@@ -75,7 +75,7 @@
 </div>
 
 <div id="create_room_box" class="box">
-	<a href="#" id="close_btn" class="btn btn-default">&times;</a>
+	<a href="#" id="close_btn" class="btn btn-default glyphicon glyphicon-remove"></a>
 	<div class="panel panel-default" id="create_room_panel">
 		<div class="panel-heading">Create a Room</div>
 		<div class="panel-body">
@@ -324,30 +324,61 @@ socket.on('makeRoomResponse', function(code){
 			$("#createmsg").fadeIn().delay(1000).fadeOut("slow");
 		}else if(code==1){
 			//Success
-			console.log("Made room successfully")
+			console.log("Made room successfully");
+			$("#create_room_name").val("");
+			$("#create_room_pw").val("");
+			$("#create_num_players").selectpicker('refresh');
+			$("#create_game_type").selectpicker('refresh');
+
 			$("#close_btn").click();
 		}
 	}
 });
 
 socket.on('gameRoomCreated', function(msg){
-	console.log("New room detected");
 	var room = JSON.parse(msg);
+	console.log("New room detected: "+room.id);
 	addRoom(room);
 });
 
 socket.on('gameRoomDeleted', function(id){
-	console.log("Room removed");
+	console.log("Room removed: "+id);
 	removeRoom(id);
 });
 
 socket.on('allRooms', function(rooms){
 	console.log("Getting all game rooms");
 	var r = JSON.parse(rooms);
-	if(gameRooms.active==0){
-		for(var i=0;i<r.length;i++){
-			addRoom(r[i]);
+	//remove all first
+	if(gameRooms.active>0){
+		for(var k in gameRooms){
+			if(typeof gameRooms[k] == "object"){
+				gameRooms[k].remove();
+			}
 		}
+	}
+	//add all new ones
+	for(var i=0;i<r.length;i++){
+		addRoom(r[i]);
+	}
+});
+
+socket.on('joinRoomSuccess', function(room){
+	var r = JSON.parse(room);
+	console.log("Successfully joined room "+r.id);
+});
+
+socket.on('joinRoomFailure', function(msg){
+
+});
+
+socket.on('playerJoin', function(msg){
+
+});
+
+socket.on('leaveStatus', function(code){
+	if(code==1){
+		console.log("Successfully left room.");
 	}
 });
 
@@ -358,7 +389,12 @@ function addRoom(room){
 	tr.append($("<td>").text(room.name));
 	tr.append($("<td>").text(room.game));
 	tr.append($("<td>").text(room.players));
-	tr.append($("<td>").text("Join"));
+	var joinbutton = $("<a class='btn btn-primary' href='#' role='button'>").text("Join Game");
+	joinbutton.click(function(){
+		socket.emit('joinRoom', room.id);
+		console.log("Attempting to join room "+room.id);
+	});
+	tr.append($("<td>").append(joinbutton));
 	gameRooms[room.id] = tr;
 	gameRooms.active++;
 	$('#gameroomtable > tbody:last-child').append(tr);
@@ -440,6 +476,7 @@ $("#create_room_button2").click(function(){
 				makeRoomStatus = true;
 				$("#create_room_button2").hide();
 				$("#loading").show();
+				//TODO: game room players should show players' colors
 			}else{
 				error = "Please select a game/players.";
 			}

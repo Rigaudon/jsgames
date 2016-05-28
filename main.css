@@ -192,8 +192,10 @@ body {
 	background-color:#1A1A1A;
 }
 #gameroomtable>tbody>tr:hover{
+	/*
 	background-color:lightblue;
 	color:black;
+	*/
 }
 #placeholder{
 	font-style: italic;

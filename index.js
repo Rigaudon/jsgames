@@ -11,11 +11,13 @@ var clients = Object();
 clients.sockets = [];
 clients.names = [];
 clients.colors = [];
+clients.gameRooms = [];
 clients.online = 0;
 clients.addClient = function(socket, name){
 	clients.sockets.push(socket);
 	clients.names.push(name);
 	clients.colors.push('#FFFFFF');
+	clients.gameRooms.push([]);
 	socket.emit('login status', 1);
 	console.log('User '+name+' logged in');
 	clients.online++;
@@ -26,6 +28,12 @@ clients.removeClient = function(socket){
 	if(i!=-1){
 		console.log('User '+clients.names[i]+' disconnected');
 		io.emit('userDisconnect', clients.names[i]);
+		//handle client's game rooms here
+		console.log("User's games: "+clients.gameRooms[i]);
+		for(var j=0;j<clients.gameRooms[i].length;j++){
+			clients.leaveRoom(socket, clients.gameRooms[i][j]);
+		}
+
 		clients.sockets.splice(i, 1);
 		clients.names.splice(i, 1);
 		clients.colors.splice(i,1);
@@ -68,6 +76,22 @@ clients.broadcastOnlineUsers = function(){
 	io.emit('onlineUsers',JSON.stringify([clients.names, clients.colors]));
 }
 
+clients.requestJoin = function(userSocket, roomid){
+	console.log("User "+clients.getNameFromSocket(userSocket)+" attempted to join room "+roomid);
+	if(gamerooms.playerJoin(userSocket, roomid)){
+		console.log("User joined successfully");
+		var i = clients.sockets.indexOf(userSocket);
+		clients.gameRooms[i].push(roomid);
+	}
+}
+clients.leaveRoom = function(userSocket, roomid){
+	var i = clients.sockets.indexOf(userSocket);
+	var j = clients.gameRooms[i].indexOf(roomid);
+	if(j!=-1 && gamerooms[roomid].playersockets.indexOf(userSocket)!=-1){
+		clients.gameRooms[i].splice(j, 1);
+		gamerooms.playerLeave(userSocket, roomid);
+	}
+}
 //consider using clients.sockets instead of io.emit
 
 var gamerooms = {};
@@ -78,41 +102,71 @@ gamerooms.createRoom = function(id, name, pw, type, numplayers, playersocket){
 	newroom.name = name;
 	newroom.pw = pw;
 	newroom.game = type;
+	//number of MAX players; to get active, do room.players.length
 	newroom.numPlayers = numplayers
 	newroom.players = [];
 	newroom.playersockets = [];
 	gamerooms.idlist.push(id);
 	gamerooms[newroom.id] = newroom;
 	//handle pw protected rooms later
-
-	//uncomment later
-	//gamerooms.playerJoin(playersocket, id);
-
+/*
+	//dont need to emit because playerJoin emits to all
 	var toEmit = {};
 	toEmit["id"] = newroom.id;
 	toEmit["name"] = newroom.name;
 	toEmit["players"] = newroom.players;
 	toEmit["game"] = newroom.game;
 	io.emit('gameRoomCreated', JSON.stringify(toEmit));
+*/
+	clients.requestJoin(playersocket, id);
+
 }
 
 gamerooms.deleteRoom = function(id){
 	delete gamerooms[id];
-	gamerooms.idlist.splice(gamerooms.indexOf(id), 1);
+	gamerooms.idlist.splice(gamerooms.idlist.indexOf(id), 1);
 	io.emit('gameRoomDeleted', id);
 }
 
 gamerooms.playerJoin = function(userSocket, roomid){
 	var room = gamerooms[roomid];
-	if(room.players.length < room.numPlayers){
+	if(room.players.length < room.numPlayers && room.playersockets.indexOf(userSocket)==-1){
 		room.playersockets.push(userSocket);
 		room.players.push(clients.getNameFromSocket(userSocket));
+		
+		var toEmit = {};
+		toEmit["id"] = room.id;
+		toEmit["name"] = room.name;
+		toEmit["players"] = room.players;
+		toEmit["game"] = room.game;
+		
+		userSocket.emit('joinRoomSuccess', JSON.stringify(toEmit));
+
+		//update game room list
+		gamerooms.broadcastAllRooms();
+		//broadcast join to all users
+		for(var i=0;i<room.playersockets.length;i++){
+			room.playersockets[i].emit('playerJoin', room.id);
+		}
+		return true;
+	}else{
+		userSocket.emit('joinRoomFailure', 'Full');
+		return false;
 	}
 }
 
-gamerooms.playerLeave = function(userSocket){
-	//remove user from all gamerooms
-	//need to keep track of that?
+gamerooms.playerLeave = function(userSocket, roomid){
+	//remove user from room roomid
+	var i = gamerooms[roomid].playersockets.indexOf(userSocket);
+	gamerooms[roomid].players.splice(i, 1);
+	gamerooms[roomid].playersockets.splice(i, 1);
+	console.log("User left room "+roomid);
+	console.log("Remaing players: "+gamerooms[roomid].players);
+	userSocket.emit('leaveStatus', 1);
+	if(gamerooms[roomid].players.length==0){
+		gamerooms.deleteRoom(roomid);
+	}
+	gamerooms.broadcastAllRooms();
 }
 
 gamerooms.getAllRooms = function(){
@@ -141,6 +195,10 @@ gamerooms.generatedId = function(){
     	return text;
     }
     return gamerooms.generatedId();
+}
+
+gamerooms.broadcastAllRooms = function(){
+	io.emit('allRooms',JSON.stringify(gamerooms.getAllRooms()));
 }
 
 app.get('/', function(req, res){
@@ -239,6 +297,11 @@ io.on('connection', function(socket){
 	//sending all the current room info
 	socket.on('getGameRooms', function(msg){
 		socket.emit('allRooms',JSON.stringify(gamerooms.getAllRooms()));
+	});
+
+	//client requests to join room id
+	socket.on('joinRoom', function(roomid){
+		clients.requestJoin(socket, roomid);
 	});
 });
 
