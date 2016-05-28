@@ -7,8 +7,6 @@ var validGames = ["Connect Four"];
 var validPlayers = {};
 validPlayers["Connect Four"] = ["2"];
 
-var gameroom = false;
-
 var clients = Object();
 clients.sockets = [];
 clients.names = [];
@@ -72,9 +70,83 @@ clients.broadcastOnlineUsers = function(){
 
 //consider using clients.sockets instead of io.emit
 
+var gamerooms = {};
+gamerooms.idlist = [];
+gamerooms.createRoom = function(id, name, pw, type, numplayers, playersocket){
+	var newroom = Object();
+	newroom.id = id;
+	newroom.name = name;
+	newroom.pw = pw;
+	newroom.game = type;
+	newroom.numPlayers = numplayers
+	newroom.players = [];
+	newroom.playersockets = [];
+	gamerooms.idlist.push(id);
+	gamerooms[newroom.id] = newroom;
+	//handle pw protected rooms later
+
+	//uncomment later
+	//gamerooms.playerJoin(playersocket, id);
+
+	var toEmit = {};
+	toEmit["id"] = newroom.id;
+	toEmit["name"] = newroom.name;
+	toEmit["players"] = newroom.players;
+	toEmit["game"] = newroom.game;
+	io.emit('gameRoomCreated', JSON.stringify(toEmit));
+}
+
+gamerooms.deleteRoom = function(id){
+	delete gamerooms[id];
+	gamerooms.idlist.splice(gamerooms.indexOf(id), 1);
+	io.emit('gameRoomDeleted', id);
+}
+
+gamerooms.playerJoin = function(userSocket, roomid){
+	var room = gamerooms[roomid];
+	if(room.players.length < room.numPlayers){
+		room.playersockets.push(userSocket);
+		room.players.push(clients.getNameFromSocket(userSocket));
+	}
+}
+
+gamerooms.playerLeave = function(userSocket){
+	//remove user from all gamerooms
+	//need to keep track of that?
+}
+
+gamerooms.getAllRooms = function(){
+	var allrooms = [];
+	for(var i=0;i<gamerooms.idlist.length;i++){
+		var curr = gamerooms[gamerooms.idlist[i]];
+		var toEmit = Object();
+		toEmit.id = curr.id;
+		toEmit.players = curr.players;
+		toEmit.game = curr.game;
+		toEmit.name = curr.name;
+		allrooms.push(toEmit);
+	}
+	return allrooms;
+}
+
+gamerooms.generatedId = function(){
+	var len = 6;
+	var text = "";
+    var possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    for(var i=0;i<len;i++){
+        text += possible.charAt(Math.floor(Math.random() * possible.length));
+    }
+
+    if(gamerooms.idlist.indexOf(text)==-1){
+    	return text;
+    }
+    return gamerooms.generatedId();
+}
+
 app.get('/', function(req, res){
   res.sendFile(__dirname + '/index.html');
 });
+
 
 function validStr(str){
 	//TODO: Implement me
@@ -122,6 +194,7 @@ io.on('connection', function(socket){
   		}
   	});
 
+  	//making a game room
   	socket.on('makeRoom', function(room){
   		var r = JSON.parse(room);
   		//server side validation
@@ -156,11 +229,17 @@ io.on('connection', function(socket){
   			//make room
   			console.log("Making room");
   			socket.emit('makeRoomResponse', 1);
+  			gamerooms.createRoom(gamerooms.generatedId(), r.name, r.pw, r.gameType, r.numPlayers, socket);
   		}else{
   			console.log("There were "+errors+" errors.");
   			socket.emit('makeRoomResponse', 0);
   		}
   	});
+	
+	//sending all the current room info
+	socket.on('getGameRooms', function(msg){
+		socket.emit('allRooms',JSON.stringify(gamerooms.getAllRooms()));
+	});
 });
 
 

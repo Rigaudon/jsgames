@@ -244,6 +244,7 @@ socket.on('login status', function(status){
 		socket.emit('choosecolor', myColor);
 		$("#chatname").addClass('label-'+colors[myColor]);
 		socket.emit('joinchatroom', 'main');
+		socket.emit('getGameRooms', '');
 
 	}else if(status==0){
 		//already taken
@@ -329,6 +330,27 @@ socket.on('makeRoomResponse', function(code){
 	}
 });
 
+socket.on('gameRoomCreated', function(msg){
+	console.log("New room detected");
+	var room = JSON.parse(msg);
+	addRoom(room);
+});
+
+socket.on('gameRoomDeleted', function(id){
+	console.log("Room removed");
+	removeRoom(id);
+});
+
+socket.on('allRooms', function(rooms){
+	console.log("Getting all game rooms");
+	var r = JSON.parse(rooms);
+	if(gameRooms.active==0){
+		for(var i=0;i<r.length;i++){
+			addRoom(r[i]);
+		}
+	}
+});
+
 //add a room to the list of available rooms
 function addRoom(room){
 	var tr = $("<tr>");
@@ -343,8 +365,9 @@ function addRoom(room){
 	//$("#placeholder").css('display', 'none');
 	$("#placeholder").hide();
 }
-//remove a room from the list
+
 function removeRoom(roomId){
+	//remove it from list
 	gameRooms[roomId].remove();
 	gameRooms.active--;
 	if(gameRooms.active==0){

@@ -188,7 +188,13 @@ body {
 #gameroomtable th:nth-child(even){
 	background-color:#333333;
 }
-
+#gameroomtable>tbody>tr:nth-of-type(odd){
+	background-color:#1A1A1A;
+}
+#gameroomtable>tbody>tr:hover{
+	background-color:lightblue;
+	color:black;
+}
 #placeholder{
 	font-style: italic;
 	color:#888888;
@@ -314,7 +320,6 @@ body {
 	text-align: center;
 	padding: 6px 0;
 	font-size: 12px;
-	font-size:1vw;
 	line-height: 1.42;
 	border-radius: 15px
 }
