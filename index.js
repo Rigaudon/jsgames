@@ -8,35 +8,31 @@ var validPlayers = {};
 validPlayers["Connect Four"] = ["2"];
 
 var clients = Object();
-clients.sockets = [];
-clients.names = [];
-clients.colors = [];
-clients.gameRooms = [];
+clients.sockets = {};
+clients.colors = {};
+clients.gameRooms = {};
 clients.online = 0;
 clients.addClient = function(socket, name){
-	clients.sockets.push(socket);
-	clients.names.push(name);
-	clients.colors.push('#FFFFFF');
-	clients.gameRooms.push([]);
+	clients.sockets[name] = socket;
+	clients.colors[name] = '#FFFFFF';
+	clients.gameRooms[name] = [];
 	socket.emit('login status', 1);
 	console.log('User '+name+' logged in');
 	clients.online++;
 	clients.broadcastOnlineUsers();
 }
 clients.removeClient = function(socket){
-	var i = clients.sockets.indexOf(socket);
-	if(i!=-1){
-		console.log('User '+clients.names[i]+' disconnected');
-		io.emit('userDisconnect', clients.names[i]);
+	var name = clients.getNameFromSocket(socket);
+	if(name!=-false){
+		console.log('User '+name+' disconnected');
+		io.emit('userDisconnect', name);
 		//handle client's game rooms here
-		console.log("User's games: "+clients.gameRooms[i]);
-		for(var j=0;j<clients.gameRooms[i].length;j++){
-			clients.leaveRoom(socket, clients.gameRooms[i][j]);
+		for(var j=0;j<clients.gameRooms[name].length;j++){
+			clients.leaveRoom(name, clients.gameRooms[name][j]);
 		}
 
-		clients.sockets.splice(i, 1);
-		clients.names.splice(i, 1);
-		clients.colors.splice(i,1);
+		delete clients.sockets[name];
+		delete clients.colors[name];
 		clients.online--;
 		clients.broadcastOnlineUsers();
 	}else{
@@ -44,52 +40,49 @@ clients.removeClient = function(socket){
 	}
 }
 clients.name_available = function(name){
-	return clients.names.indexOf(name)==-1;
+	return clients.sockets[name]==undefined;
 }
 clients.getNameFromSocket = function(socket){
-	var i = clients.sockets.indexOf(socket);
-	if(i!=-1){
-		return clients.names[i];
-	}else{
-		return false;
+	for(var k in clients.sockets){
+		if(clients.sockets[k]==socket){
+			return k;
+		}
 	}
+	return false;
 }
 clients.getSocketFromName = function(name){
-	var i = clients.names.indexOf(name);
-	if(i!=-1){
-		return clients.sockets[i];
-	}else{
-		return false;
-	}
+	return clients.sockets[name];
 }
-clients.setColor = function(userSocket, color){
-	var i = clients.sockets.indexOf(userSocket);
-	if(i!=-1){
-		console.log("Set user color to "+color);
-		clients.colors[i] = color;
+clients.setColor = function(name, color){
+	if(!clients.name_available(name)){
+		console.log("Set "+name+"'s color to "+color);
+		clients.colors[name] = color;
 		clients.broadcastOnlineUsers();
 	}else{
-		return false;
+		return false
 	}
 }
 clients.broadcastOnlineUsers = function(){
-	io.emit('onlineUsers',JSON.stringify([clients.names, clients.colors]));
+	var toEmit = [[],[]];
+	for(var k in clients.colors){
+		toEmit[0].push(k);
+		toEmit[1].push(clients.colors[k]);
+	}
+	io.emit('onlineUsers',JSON.stringify(toEmit));
 }
 
-clients.requestJoin = function(userSocket, roomid){
-	console.log("User "+clients.getNameFromSocket(userSocket)+" attempted to join room "+roomid);
-	if(gamerooms.playerJoin(userSocket, roomid)){
+clients.requestJoin = function(name, roomid){
+	console.log("User "+name+" attempted to join room "+roomid);
+	if(gamerooms.playerJoin(clients.getSocketFromName(name), roomid)){
 		console.log("User joined successfully");
-		var i = clients.sockets.indexOf(userSocket);
-		clients.gameRooms[i].push(roomid);
+		clients.gameRooms[name].push(roomid);
 	}
 }
-clients.leaveRoom = function(userSocket, roomid){
-	var i = clients.sockets.indexOf(userSocket);
-	var j = clients.gameRooms[i].indexOf(roomid);
-	if(j!=-1 && gamerooms[roomid].playersockets.indexOf(userSocket)!=-1){
-		clients.gameRooms[i].splice(j, 1);
-		gamerooms.playerLeave(userSocket, roomid);
+clients.leaveRoom = function(name, roomid){
+	var j = clients.gameRooms[name].indexOf(roomid);
+	if(j!=-1){
+		clients.gameRooms[name].splice(j, 1);
+		gamerooms.playerLeave(clients.getSocketFromName(name), roomid);
 	}
 }
 //consider using clients.sockets instead of io.emit
@@ -118,7 +111,7 @@ gamerooms.createRoom = function(id, name, pw, type, numplayers, playersocket){
 	toEmit["game"] = newroom.game;
 	io.emit('gameRoomCreated', JSON.stringify(toEmit));
 */
-	clients.requestJoin(playersocket, id);
+	clients.requestJoin(clients.getNameFromSocket(playersocket), id);
 
 }
 
@@ -243,7 +236,7 @@ io.on('connection', function(socket){
 
   	//set the user's color
   	socket.on('choosecolor', function(col){
-  		clients.setColor(socket, col);
+  		clients.setColor(clients.getNameFromSocket(socket), col);
   	});
 
   	socket.on('joinchatroom', function(room){
@@ -301,7 +294,7 @@ io.on('connection', function(socket){
 
 	//client requests to join room id
 	socket.on('joinRoom', function(roomid){
-		clients.requestJoin(socket, roomid);
+		clients.requestJoin(clients.getNameFromSocket(socket), roomid);
 	});
 });
 
