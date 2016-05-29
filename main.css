@@ -38,11 +38,12 @@ body {
 }
 .c4row{
 	overflow:hidden;
+	height:16.6%;
 }
 
 .c4box{
 	background-color:#444444;
-	width:14.2%;
+	/*width:14.2%;*/
 	border:1px solid white;
 	height:100%;
 	padding:0;
@@ -144,12 +145,16 @@ body {
 	z-index: 0;
 }
 
-#connect_four_div{
-	height:100%;
-	width:45%;
+#active_game_div{
+	height:83%;
+	width:60%;
 	top:0px;
 	margin-top:20px;
-	margin-bottom:20px;
+}
+
+#connect_four_board{
+	height:86%;
+	margin-top:10px;
 }
 
 #chatmain{
@@ -324,4 +329,16 @@ body {
 	font-size: 12px;
 	line-height: 1.42;
 	border-radius: 15px
+}
+
+#opponent, #me{
+	height:7%;
+}
+
+#back_to_lobby{
+	display:none;
+}
+
+#create_room_button, #create_room_button2, #back_to_lobby{
+	padding-top:14px;
 }

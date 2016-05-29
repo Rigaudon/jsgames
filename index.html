@@ -8,6 +8,7 @@
 	<script src="bootstrap-3.3.6-dist/js/bootstrap.min.js"></script>
 	<link rel="stylesheet" href="bootstrap-select-1.10.0/dist/css/bootstrap-select.min.css">
 	<script src="bootstrap-select-1.10.0/dist/js/bootstrap-select.min.js"></script>
+	<script src="js.cookie.js"></script>
 	<link rel="stylesheet" href="main.css">
 </head>
 <body>
@@ -50,139 +51,137 @@
 		</div>
 
 		<div id="creategamebox" class="box">
-		<!--
-		<div class="input-group input-group-lg" id="joingamenum">
-			<span class="input-group-addon">Join a Room</span>
-			<input autocomplete="off" class="form-control" type="text" id="joinroomnum" placeholder="Room # and press Enter"/>
-		</div>
-	-->		
-	<a class="btn btn-success" href="#" role="button" id="create_room_button">Create a Room</a>
-</div>
 
-<div class="box" id="onlinebox">
-	<div class="panel panel-default">
-		<div class="panel-heading">
-			<span class="text">Online</span><span class="badge" id="numonline">0</span>
+			<a class="btn btn-success" href="#" role="button" id="create_room_button">Create a Room</a>
+			<a class="btn btn-default" href="#" role="button" id="back_to_lobby">
+				<span class="glyphicon glyphicon-home" aria-hidden="true"></span> Back to Lobby
+			</a>
 		</div>
-		<div class="panel-body">
-			<div id="onlinelist"></div>
+
+		<div class="box" id="onlinebox">
+			<div class="panel panel-default">
+				<div class="panel-heading">
+					<span class="text">Online</span><span class="badge" id="numonline">0</span>
+				</div>
+				<div class="panel-body">
+					<div id="onlinelist"></div>
+				</div>
+			</div>
 		</div>
+
+		<div class="box" id="dim_div">
+
+		</div>
+
+		<div id="create_room_box" class="box">
+			<a href="#" id="close_btn" class="btn btn-default glyphicon glyphicon-remove"></a>
+			<div class="panel panel-default" id="create_room_panel">
+				<div class="panel-heading">Create a Room</div>
+				<div class="panel-body">
+					<div class="row"><!--Placeholder--></div>
+					<div class="row">
+						<div class="input-group input-group-lg">
+							<span class="input-group-addon">Room Name</span>
+							<input type="text" class="form-control" placeholder="Required" aria-describedby="basic-addon1" id="create_room_name" maxlength="20">
+						</div>
+					</div>
+					<div class="row">
+						<div class="input-group input-group-lg">
+							<span class="input-group-addon glyphicon glyphicon-lock"></span>
+							<input type="password" class="form-control" placeholder="Optional" aria-describedby="basic-addon1" id="create_room_pw" maxlength="20">
+						</div>
+					</div>
+					<div class="row">
+						<div class="col-md-6">
+							<select class="selectpicker form-control col-lg-12" title="Choose a Game" id="create_game_type">
+								<option value="Connect Four">Connect Four</option>
+								<option value="Checkers">Checkers</option>
+								<option value="Uno">Uno</option>
+								<option value="Chess">Chess</option>
+							</select>
+						</div>
+						<div class="col-md-6">
+							<select class="selectpicker form-control col-lg-12" title="Number of Players" id="create_num_players">
+								<option disabled>Please select a game first</option>
+							</select>
+						</div>
+					</div>
+					<div class="row">
+						<a class="btn btn-success" href="#" role="button" id="create_room_button2">Create Room</a>
+						<div class="progress" id="loading">
+							<div class="progress-bar progress-bar-success progress-bar-striped active" role="progressbar" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100" style="width: 100%">
+							</div>
+						</div>
+					</div>
+					<div class="row"><!--Placeholder--></div>
+				</div>
+			</div>
+			<div class="msg alert alert-danger" id="createmsg">Create message</div>
+		</div>
+
+		<div id="active_game_div" class="box">
+			<div id="opponent"><span class="label label-default">Waiting for opponent...</span></div>
+			<div id="connect_four_board">
+				<div class="row c4row">
+					<div class="col-md-1 c4box"></div>
+					<div class="col-md-1 c4box"></div>
+					<div class="col-md-1 c4box"></div>
+					<div class="col-md-1 c4box"></div>
+					<div class="col-md-1 c4box"></div>
+					<div class="col-md-1 c4box"></div>
+					<div class="col-md-1 c4box"></div>
+				</div>
+				<div class="row c4row">
+					<div class="col-md-1 c4box"></div>
+					<div class="col-md-1 c4box"></div>
+					<div class="col-md-1 c4box"></div>
+					<div class="col-md-1 c4box"></div>
+					<div class="col-md-1 c4box"></div>
+					<div class="col-md-1 c4box"></div>
+					<div class="col-md-1 c4box"></div>
+				</div>
+				<div class="row c4row">
+					<div class="col-md-1 c4box"></div>
+					<div class="col-md-1 c4box"></div>
+					<div class="col-md-1 c4box"></div>
+					<div class="col-md-1 c4box"></div>
+					<div class="col-md-1 c4box"></div>
+					<div class="col-md-1 c4box"></div>
+					<div class="col-md-1 c4box"></div>
+				</div>
+				<div class="row c4row">
+					<div class="col-md-1 c4box"></div>
+					<div class="col-md-1 c4box"></div>
+					<div class="col-md-1 c4box"></div>
+					<div class="col-md-1 c4box"></div>
+					<div class="col-md-1 c4box"></div>
+					<div class="col-md-1 c4box"></div>
+					<div class="col-md-1 c4box"></div>
+				</div>
+				<div class="row c4row">
+					<div class="col-md-1 c4box"></div>
+					<div class="col-md-1 c4box"></div>
+					<div class="col-md-1 c4box"></div>
+					<div class="col-md-1 c4box"></div>
+					<div class="col-md-1 c4box"></div>
+					<div class="col-md-1 c4box"></div>
+					<div class="col-md-1 c4box"></div>
+				</div>
+				<div class="row c4row">
+					<div class="col-md-1 c4box"></div>
+					<div class="col-md-1 c4box"></div>
+					<div class="col-md-1 c4box"></div>
+					<div class="col-md-1 c4box"></div>
+					<div class="col-md-1 c4box"></div>
+					<div class="col-md-1 c4box"></div>
+					<div class="col-md-1 c4box"></div>
+				</div>
+			</div>
+			<div id="me"><span class="label label-default">Me</span></div>
+		</div>
+
 	</div>
-</div>
-
-<div class="box" id="dim_div">
-
-</div>
-
-<div id="create_room_box" class="box">
-	<a href="#" id="close_btn" class="btn btn-default glyphicon glyphicon-remove"></a>
-	<div class="panel panel-default" id="create_room_panel">
-		<div class="panel-heading">Create a Room</div>
-		<div class="panel-body">
-			<div class="row"><!--Placeholder--></div>
-			<div class="row">
-				<div class="input-group input-group-lg">
-					<span class="input-group-addon">Room Name</span>
-					<input type="text" class="form-control" placeholder="Required" aria-describedby="basic-addon1" id="create_room_name" maxlength="20">
-				</div>
-			</div>
-			<div class="row">
-				<div class="input-group input-group-lg">
-					<span class="input-group-addon glyphicon glyphicon-lock"></span>
-					<input type="password" class="form-control" placeholder="Optional" aria-describedby="basic-addon1" id="create_room_pw" maxlength="20">
-				</div>
-			</div>
-			<div class="row">
-				<div class="col-md-6">
-					<select class="selectpicker form-control col-lg-12" title="Choose a Game" id="create_game_type">
-						<option value="Connect Four">Connect Four</option>
-						<option value="Checkers">Checkers</option>
-						<option value="Uno">Uno</option>
-						<option value="Chess">Chess</option>
-					</select>
-				</div>
-				<div class="col-md-6">
-					<select class="selectpicker form-control col-lg-12" title="Number of Players" id="create_num_players">
-						<option disabled>Please select a game first</option>
-					</select>
-				</div>
-			</div>
-			<div class="row">
-				<a class="btn btn-success" href="#" role="button" id="create_room_button2">Create Room</a>
-				<div class="progress" id="loading">
-				  <div class="progress-bar progress-bar-success progress-bar-striped active" role="progressbar" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100" style="width: 100%">
-				  </div>
-				</div>
-			</div>
-			<div class="row"><!--Placeholder--></div>
-		</div>
-	</div>
-	<div class="msg alert alert-danger" id="createmsg">Create message</div>
-</div>
-
-<div id="connect_four_div" class="box">
-	<div id="opponent" class="label label-default">Waiting for opponent...</div>
-	<div id="connect_four_board">
-		<div class="row c4row">
-			<div class="col-md-1 c4box"></div>
-			<div class="col-md-1 c4box"></div>
-			<div class="col-md-1 c4box"></div>
-			<div class="col-md-1 c4box"></div>
-			<div class="col-md-1 c4box"></div>
-			<div class="col-md-1 c4box"></div>
-			<div class="col-md-1 c4box"></div>
-		</div>
-		<div class="row c4row">
-			<div class="col-md-1 c4box"></div>
-			<div class="col-md-1 c4box"></div>
-			<div class="col-md-1 c4box"></div>
-			<div class="col-md-1 c4box"></div>
-			<div class="col-md-1 c4box"></div>
-			<div class="col-md-1 c4box"></div>
-			<div class="col-md-1 c4box"></div>
-		</div>
-		<div class="row c4row">
-			<div class="col-md-1 c4box"></div>
-			<div class="col-md-1 c4box"></div>
-			<div class="col-md-1 c4box"></div>
-			<div class="col-md-1 c4box"></div>
-			<div class="col-md-1 c4box"></div>
-			<div class="col-md-1 c4box"></div>
-			<div class="col-md-1 c4box"></div>
-		</div>
-		<div class="row c4row">
-			<div class="col-md-1 c4box"></div>
-			<div class="col-md-1 c4box"></div>
-			<div class="col-md-1 c4box"></div>
-			<div class="col-md-1 c4box"></div>
-			<div class="col-md-1 c4box"></div>
-			<div class="col-md-1 c4box"></div>
-			<div class="col-md-1 c4box"></div>
-		</div>
-		<div class="row c4row">
-			<div class="col-md-1 c4box"></div>
-			<div class="col-md-1 c4box"></div>
-			<div class="col-md-1 c4box"></div>
-			<div class="col-md-1 c4box"></div>
-			<div class="col-md-1 c4box"></div>
-			<div class="col-md-1 c4box"></div>
-			<div class="col-md-1 c4box"></div>
-		</div>
-		<div class="row c4row">
-			<div class="col-md-1 c4box"></div>
-			<div class="col-md-1 c4box"></div>
-			<div class="col-md-1 c4box"></div>
-			<div class="col-md-1 c4box"></div>
-			<div class="col-md-1 c4box"></div>
-			<div class="col-md-1 c4box"></div>
-			<div class="col-md-1 c4box"></div>
-		</div>
-	</div>
-	<div id="me" class="label label-default">Me</div>
-</div>
-
-</div>
-<script type="text/javascript">
+	<script type="text/javascript">
 //Variables
 var socket = io();
 var usrname = false;
@@ -198,6 +197,48 @@ var gameRooms = {};
 gameRooms.active = 0;
 
 var makeRoomStatus = false;
+var activeGame = null;
+var currRoom = null;
+
+//Game Room code
+//Connect Four
+var ConnectFourRoom = Object();
+ConnectFourRoom.joinedRoom = function(){
+	$("#gameroombox").animate({
+		left: '-50%'
+	}, 500);
+	ConnectFourRoom.resize();
+	$("#create_room_button").hide();
+	$("#back_to_lobby").show();
+	$("#active_game_div").animate({
+		left: '42.5%'
+	}, 500);
+	activeGame = "Connect Four";
+}
+ConnectFourRoom.leaveRoom = function(){
+	$("#active_game_div").animate({
+		left: '150%'
+	});
+	//empty the div?
+	$("#back_to_lobby").hide();
+	$("#create_room_button").show();
+	$("#gameroombox").animate({
+		left: '42.5%'
+	}, 500);
+	socket.emit('leaveRoom', currRoom);
+	activeGame = null;
+	currRoom = null;
+}
+ConnectFourRoom.resize = function(){
+	var setTo = $(".c4row").height();
+	$(".c4box").width(setTo);
+	var margins = ($("#connect_four_board").width()-7*(setTo))/2;
+	$(".c4row").css("margin-left", margins+"px");
+}
+
+ConnectFourRoom.buildRoom = function(gameState){
+
+}
 
 //Server com for logging in
 function attemptLogin(picked_name){
@@ -245,6 +286,7 @@ socket.on('login status', function(status){
 		$("#chatname").addClass('label-'+colors[myColor]);
 		socket.emit('joinchatroom', 'main');
 		socket.emit('getGameRooms', '');
+		Cookies.set('name', usrname, {expires: 7});
 
 	}else if(status==0){
 		//already taken
@@ -366,6 +408,15 @@ socket.on('allRooms', function(rooms){
 socket.on('joinRoomSuccess', function(room){
 	var r = JSON.parse(room);
 	console.log("Successfully joined room "+r.id);
+	currRoom = r.id;
+	//move the player into the room...
+	switch(r.game){
+		case "Connect Four":
+		ConnectFourRoom.buildRoom(r.gameState);
+		ConnectFourRoom.joinedRoom();
+		break;
+	}
+
 });
 
 socket.on('joinRoomFailure', function(msg){
@@ -373,7 +424,8 @@ socket.on('joinRoomFailure', function(msg){
 });
 
 socket.on('playerJoin', function(msg){
-
+	var received = JSON.parse(msg);
+	console.log("User "+received[1]+" has joined room "+received[0]);
 });
 
 socket.on('leaveStatus', function(code){
@@ -404,6 +456,9 @@ function addRoom(room){
 
 function removeRoom(roomId){
 	//remove it from list
+	if(gameRooms[roomId]==undefined){
+		return false;
+	}
 	gameRooms[roomId].remove();
 	gameRooms.active--;
 	if(gameRooms.active==0){
@@ -414,6 +469,7 @@ function removeRoom(roomId){
 
 
 //Client JS Code
+
 
 //Name picking
 $("#input_name").bind('keypress', function(e){
@@ -494,6 +550,17 @@ $("#create_room_button2").click(function(){
 	}
 });
 
+//send user from game back to lobby
+$("#back_to_lobby").click(function(){
+	switch(activeGame){
+		case null:
+		return false;
+		case "Connect Four":
+		ConnectFourRoom.leaveRoom();
+		break;
+		}
+	});
+
 function validChars(str){
 	//TODO: IMPLEMENT ME
 	return true;
@@ -515,21 +582,7 @@ $("#create_game_type").change(function(){
 	list.selectpicker('refresh');
 });
 
-/*
-//Clicking on "connect four"
-$("#select_connect4").click(function(){
-	resizeC4();
-	activeView = "Connect Four";
-	//Replace me with room id
-	socket.emit('join', 'Connect Four');
-	$("#selectbox").animate({
-		left: '-50%'
-	}, 500);
-	$("#connect_four_div").animate({
-		left: '40%'
-	}, 500);
-});
-*/
+
 //Misc chatbox focus
 /*
 $("#messages").click(function(){
@@ -542,22 +595,22 @@ $(".list-group-item").hover(
 	function(){$(this).addClass('active')},
 	function(){$(this).removeClass('active')}
 	);
+*/
 
 //Correcting size for the connect 4 window.
-function resizeC4(){
-	var setTo = $(".c4box").width();
-	$(".c4row").height(setTo);
-}
 
 $(window).resize(function(){
-	if(activeView=="Connect Four"){
-		resizeC4();
+	if(activeGame=="Connect Four"){
+		ConnectFourRoom.resize();
 	}
 })
-*/
+
 $(document).ready(function(){
 	$("#name_select").fadeIn(2000);
 	$("#input_name").focus();
+	if(Cookies.get('name')!=undefined){
+		$("#input_name").val(Cookies.get('name'));
+	}
 });
 </script>
 </body>

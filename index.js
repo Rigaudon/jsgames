@@ -101,6 +101,15 @@ gamerooms.createRoom = function(id, name, pw, type, numplayers, playersocket){
 	newroom.playersockets = [];
 	gamerooms.idlist.push(id);
 	gamerooms[newroom.id] = newroom;
+	newroom.gameState = Object();
+	switch(type){
+		case "Connect Four":
+		newroom.gameState.player1 = playersocket;
+		newroom.gameState.player2 = null;
+		newroom.gameState.boardState = [[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0]];
+		newroom.gameState.status = "Waiting for Players";
+		break;
+	}
 	//handle pw protected rooms later
 /*
 	//dont need to emit because playerJoin emits to all
@@ -132,14 +141,15 @@ gamerooms.playerJoin = function(userSocket, roomid){
 		toEmit["name"] = room.name;
 		toEmit["players"] = room.players;
 		toEmit["game"] = room.game;
-		
+		toEmit["gameState"] = room.gameState;
+
 		userSocket.emit('joinRoomSuccess', JSON.stringify(toEmit));
 
 		//update game room list
 		gamerooms.broadcastAllRooms();
 		//broadcast join to all users
 		for(var i=0;i<room.playersockets.length;i++){
-			room.playersockets[i].emit('playerJoin', room.id);
+			room.playersockets[i].emit('playerJoin', JSON.stringify([room.id, clients.getNameFromSocket(userSocket)]));
 		}
 		return true;
 	}else{
@@ -295,6 +305,10 @@ io.on('connection', function(socket){
 	//client requests to join room id
 	socket.on('joinRoom', function(roomid){
 		clients.requestJoin(clients.getNameFromSocket(socket), roomid);
+	});
+
+	socket.on('leaveRoom', function(roomid){
+		clients.leaveRoom(clients.getNameFromSocket(socket), roomid);
 	});
 });
 
