@@ -17,6 +17,9 @@ var activeGame = null;
 var currRoom = null;
 var onlineUsers = null;
 var playernum = null;
+var currentMousePos = Object();
+currentMousePos.x = 0;
+currentMousePos.y = 0;
 //Game Room code
 //Connect Four
 var ConnectFourRoom = Object();
@@ -101,6 +104,11 @@ ConnectFourRoom.buildRoom = function(gameState){
 
 			c4box.hover(function(){
 				$("#c4hoveranim").css('left', $("#"+this.id).position().left+'px');
+				/*
+				$("#c4hoveranim").animate({
+					//left: $("#"+this.id).position().left+'px'
+				},50);
+				*/
 			});
 			
 			if(gameState.boardState[j][i]!=0){
@@ -128,6 +136,7 @@ ConnectFourRoom.playerJoin = function(received){
 ConnectFourRoom.playerLeave = function(received){
 	if(currRoom==received[0]){
 		$("#c4opponent span").text("Waiting for opponent...");
+		$("#c4hoveranim").hide();
 		getRoomInfo(currRoom);
 	}
 }
@@ -175,6 +184,40 @@ ConnectFourRoom.makeMove = function(msg){
 
 	$("#c4"+received.row+received.col).addClass('c4'+ConnectFourRoom.colors[received.user]);;
 
+}
+
+ConnectFourRoom.victory = function(received){
+	//received.id, received.user, received.details
+	if(received.id!=currRoom){
+		return false;
+	}
+	getRoomInfo(currRoom);
+	$("#c4hoveranim").hide();
+	console.log(received.details);
+	
+	if(received.details[2]=="v"){
+		for(var i=received.details[0];i<received.details[0]+4;i++){
+			console.log("#c4"+i+received.details[1]);
+			$("#c4"+i+received.details[1]).css('background-color', 'white');
+		}
+	}else if(received.details[2]=="h"){
+		for(var i=received.details[1];i<received.details[1]+4;i++){
+			$("#c4"+received.details[0]+i).css('background-color', 'white');
+		}
+	}else if(received.details[2]=="l"){
+		var m = received.details[1];
+		for(var i=received.details[0];i<received.details[0]+4;i++){
+			$("#c4"+i+m).css('background-color', 'white');
+			m--;
+		}
+	}else if(received.details[2]=="r"){
+		var m = received.details[1];
+		for(var i=received.details[0];i<received.details[0]+4;i++){
+			$("#c4"+i+m).css('background-color', 'white');
+			m++;
+		}
+	}
+	
 }
 //Server com for logging in
 function attemptLogin(picked_name){
@@ -353,6 +396,9 @@ socket.on('allRooms', function(rooms){
 			}
 		}
 	}
+	var tb = $("#gameroomtable tbody");
+	tb.empty();
+	tb.append($('<tr id="placeholder"><td colspan="5">No games to display</td></tr>'));
 	//add all new ones
 	for(var i=0;i<r.length;i++){
 		addRoom(r[i]);
@@ -410,6 +456,14 @@ socket.on('gameMessage', function(msg){
 socket.on('makeMove', function(msg){
 	if(activeGame=="Connect Four"){
 		ConnectFourRoom.makeMove(msg);
+	}
+});
+
+socket.on('victory', function(msg){
+	var received = JSON.parse(msg);
+	console.log(received.user+" won!");
+	if(activeGame=="Connect Four"){
+		ConnectFourRoom.victory(received);
 	}
 });
 
@@ -640,4 +694,8 @@ $(document).ready(function(){
 	if(Cookies.get('name')!=undefined){
 		$("#input_name").val(Cookies.get('name'));
 	}
+	$(document).mousemove(function(event){
+		currentMousePos.x = event.pageX;
+		currentMousePos.y = event.pageY;
+	});
 });

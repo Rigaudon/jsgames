@@ -161,6 +161,9 @@ gamerooms.createRoom = function(id, name, pw, type, numplayers, playersocket){
 			if(move.id!=newroom.id){
 				return false;
 			}
+			if(newroom.gameState.status!="Playing"){
+				return false;
+			}
 
 			for(var row=5;row>=0;row--){
 				if(newroom.gameState.boardState[row][move.col]==0){
@@ -169,11 +172,121 @@ gamerooms.createRoom = function(id, name, pw, type, numplayers, playersocket){
 					move.user = newroom.gameState.turn;
 					move.row = row;
 					newroom.emitToPlayers('makeMove',JSON.stringify(move));
-					newroom.nextTurn();
+					var userwon = newroom.checkVictory(newroom.gameState.boardState);
+					if(userwon){
+						newroom.gameState.status = "Done";
+						var toEmit = Object();
+						toEmit.details = userwon;
+						toEmit.user = newroom.players[newroom.gameState.turn];
+						toEmit.id = newroom.id;
+						newroom.emitToPlayers('victory', JSON.stringify(toEmit));
+					}else{
+						newroom.nextTurn();
+					}
 					return true;
 				}
 			}
 			//not a valid move
+			return false;
+		}
+		newroom.checkVictory = function(board){
+			
+			var connect = 4;
+			var h = board.length;
+			var w = board[0].length;
+			function check_spot(i, j, c){
+				if(check_h(i, j, c)){
+					return 'h';
+				}
+				if(check_v(i, j, c)){
+					return 'v';
+				} 
+				return check_d(i, j, c);
+			}
+
+			function check_h(i, j, c){
+				if(j+c>w){
+					return false;
+				}
+				var at_position = board[i][j];
+				for(var k=j+1;k<j+c;k++){
+					if(board[i][k]!=at_position){
+						return false;
+					}
+				}
+				return true;
+			}
+
+			function check_v(i, j, c){
+				if(i+c>h){
+					return false;
+				}
+				var at_position = board[i][j];
+				for(var k=i+1;k<i+c;k++){
+					if(board[k][j]!=at_position){
+						return false;
+					}
+				}
+				return true;
+			}
+
+			function check_d(i, j, c){
+				if(check_d_r(i, j, c)){
+					return 'r';
+				}
+				if(check_d_l(i, j, c)){
+					return 'l';
+				}
+				return false;
+			}
+
+			function check_d_r(i, j, c){
+				if(i+c>h || j+c>w){
+					return false;
+				}
+				var at_position = board[i][j];
+				var m = i;
+				for(var k=j+1;k<j+c;k++){
+					m++;
+					if(board[m][k]!=at_position){
+						return false;
+					}
+				}
+				return true;
+			}
+
+			function check_d_l(i, j, c){
+				if(i+c>h || j-c<0){
+					return false;
+				}
+				var at_position = board[i][j];
+				var m = i;
+				for(var k=j-1;k>j-c;k--){
+					m++;
+					if(board[m][k]!=at_position){
+						return false;
+					}
+				}
+				return true;
+			}
+
+			if(w<1){
+				return false;
+			}
+
+			if(connect > w || connect > h){
+				return false;
+			}
+			for(var i=0;i<h;i++){
+				for(var j=0;j<w;j++){
+					if(board[i][j]!=0){
+						var won = check_spot(i, j, connect);
+						if(won){
+							return [i, j, won];
+						}
+					}
+				}
+			}
 			return false;
 		}
 		break;
@@ -203,6 +316,10 @@ gamerooms.deleteRoom = function(id){
 
 gamerooms.playerJoin = function(userSocket, roomid){
 	var room = gamerooms[roomid];
+	if(!room){
+		console.log("Error: tried to join invalid room");
+		return false;
+	}
 	if(room.playersockets.indexOf(userSocket)==-1){
 		var inserted = false;
 		for(var l=0;l<room.playersockets.length;l++){
