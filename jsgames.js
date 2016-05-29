@@ -30,6 +30,10 @@ ConnectFourRoom.joinedRoom = function(){
 	$("#active_game_div").animate({
 		left: '42.5%'
 	}, 500);
+	getRoomInfo(currRoom);
+	$("#room_info").animate({
+		top: '84%'
+	}, 500);
 	activeGame = "Connect Four";
 }
 ConnectFourRoom.leaveRoom = function(){
@@ -41,6 +45,9 @@ ConnectFourRoom.leaveRoom = function(){
 	$("#create_room_button").show();
 	$("#gameroombox").animate({
 		left: '42.5%'
+	}, 500);
+	$("#room_info").animate({
+		top: '105%'
 	}, 500);
 	socket.emit('leaveRoom', currRoom);
 	activeGame = null;
@@ -78,7 +85,17 @@ ConnectFourRoom.buildRoom = function(gameState){
 	for(var j=0;j<rows;j++){
 		var r = $("<div class='row c4row'>")
 		for(var i=0;i<cols;i++){
-			r.append($("<div class='col-md-1 c4box'>"));
+			var c4box = $("<div class='col-md-1 c4box' id='c4"+j+i+"'>");
+			c4box.click(function(){
+				var c4move = Object();
+				//c4move.row = j;
+				c4move.col = parseInt(this.id.charAt(3));
+				c4move.id = currRoom;
+				console.log("Attempting to make move "+c4move.col);
+				socket.emit('makeMove', JSON.stringify(c4move));
+			});
+			//c4box.text("Row "+j+", Col "+i);
+			r.append(c4box);
 		}
 		board.append(r);	
 	}
@@ -90,19 +107,73 @@ ConnectFourRoom.buildRoom = function(gameState){
 ConnectFourRoom.playerJoin = function(received){
 	 if(currRoom==received[0] && received[1]!=usrname){
 	 	$("#c4opponent span").text(received[1]);
+	 	getRoomInfo(currRoom);
 	 }
 }
 
 ConnectFourRoom.playerLeave = function(received){
 	if(currRoom==received[0]){
 		$("#c4opponent span").text("Waiting for opponent...");
+		getRoomInfo(currRoom);
 	}
 }
 
+ConnectFourRoom.gameMessage = function(msg){
+	switch(msg){
+		case "gameStart":
+			//add colors
+			var opponent = $("#c4opponent span").text();
+			var i = onlineUsers[0].indexOf(opponent);
+			$("#c4opponent span").removeClass('label-default');
+			$("#c4opponent span").addClass('label-'+colors[onlineUsers[1][i]]);
+			$("#c4me span").removeClass('label-default');
+			$("#c4me span").addClass('label-'+colors[myColor]);
+		break;
+		case "gameStop":
+			var opponent = $("#c4opponent span").text();
+			var i = onlineUsers[0].indexOf(opponent);
+			$("#c4opponent span").removeClass('label-'+colors[onlineUsers[1][i]]);
+			$("#c4opponent span").addClass('label-default');
+			$("#c4me span").removeClass('label-'+colors[myColor]);
+			$("#c4me span").addClass('label-default');
+		break;
+		case "yourTurn":
+			$("#c4me span").css('border', '20px outset lightblue');
+			$("#c4opponent span").css('border', 'none');
+		break;
+		case "opponentTurn":
+			$("#c4opponent span").css('border', '20px outset lightblue');
+			$("#c4me span").css('border', 'none');
+		break;
+	}	
+}
+
+ConnectFourRoom.makeMove = function(msg){
+	var received = JSON.parse(msg);
+	//received.id, received.col, received.row, received.user (int)
+	if(received.id!=currRoom){
+		console.log("Error: received move for wrong game id");
+		return false;
+	}
+	var color = "";
+	if(received.user==0){
+		color = "blue";
+	}else{
+		color = "red";
+	}
+	$("#c4"+received.row+received.col).css('background-color', color);
+
+}
 //Server com for logging in
 function attemptLogin(picked_name){
 	usrname = picked_name;
 	socket.emit('pickname', usrname);
+}
+
+//Get the room info
+function getRoomInfo(roomid){
+	console.log("Requesting room info...");
+	socket.emit('requestRoomInfo', roomid);
 }
 
 //Login code, moving to selection 
@@ -311,6 +382,34 @@ socket.on('leaveStatus', function(code){
 	}
 });
 
+//Game logic
+socket.on('gameMessage', function(msg){
+	if(activeGame=="Connect Four"){
+		ConnectFourRoom.gameMessage(msg);
+	}
+});
+
+socket.on('makeMove', function(msg){
+	if(activeGame=="Connect Four"){
+		ConnectFourRoom.makeMove(msg);
+	}
+});
+
+//getting room info for the box
+socket.on('roomInfo', function(room){
+	console.log("Received room information");
+	var received = JSON.parse(room);
+	$("#gameroomname").text(received.name+" ("+received.status+")");
+	$("#gameroomid").text("ID: "+received.id);
+	if(received.pw==""){
+		$("#gameroompw").empty();
+		$("#gameroompw").text("PW: ").append($("<span class='subtle'>").text("none"));
+	}else{
+		$("#gameroompw").text("Password: "+received.pw);
+	}
+	$("#gameroomgame").text(received.game);
+	$("#gameroomplayers").text(received.players+" Players");
+});
 //add a room to the list of available rooms
 function addRoom(room){
 	var tr = $("<tr>");
@@ -418,7 +517,6 @@ $("#close_btn2").click(function(){
 });
 
 //Send create room message to server
-
 $("#create_room_button2").click(function(){
 	if(makeRoomStatus){
 		return false;

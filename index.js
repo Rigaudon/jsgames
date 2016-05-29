@@ -100,16 +100,60 @@ gamerooms.createRoom = function(id, name, pw, type, numplayers, playersocket){
 	newroom.players = [];
 	newroom.playersockets = [];
 	gamerooms.idlist.push(id);
-	gamerooms[newroom.id] = newroom;
 	newroom.gameState = Object();
+	newroom.emitToPlayers = function(msg, val){
+		for(var i=0;i<newroom.playersockets.length;i++){
+			newroom.playersockets[i].emit(msg, val);
+		}
+	}
+	newroom.nextPlayer = function(curr){
+		return (curr+1)%newroom.numPlayers;
+	}
 	switch(type){
 		case "Connect Four":
 		newroom.gameState.player1 = null;
 		newroom.gameState.player2 = null;
+		newroom.gameState.turn = 0;
 		newroom.gameState.boardState = [[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0]];
 		newroom.gameState.status = "Waiting for Players";
+		
+		newroom.startGame = function(){
+			newroom.emitToPlayers('gameMessage', 'gameStart');
+			newroom.playersockets[newroom.gameState.turn].emit('gameMessage', 'yourTurn');
+			newroom.playersockets[newroom.nextPlayer(newroom.gameState.turn)].emit('gameMessage', 'opponentTurn');
+		}
+		newroom.nextTurn = function(){
+			newroom.gameState.turn = newroom.nextPlayer(newroom.gameState.turn);
+			newroom.playersockets[newroom.gameState.turn].emit('gameMessage', 'yourTurn');
+			newroom.playersockets[newroom.nextPlayer(newroom.gameState.turn)].emit('gameMessage', 'opponentTurn');
+		}
+		newroom.makeMove = function(userSocket, move){
+			if(newroom.playersockets[newroom.gameState.turn]!=userSocket){
+				//prob not log... itll fill up fast
+				return false;	
+			}
+			if(move.id!=newroom.id){
+				return false;
+			}
+
+			for(var row=5;row>=0;row--){
+				if(newroom.gameState.boardState[row][move.col]==0){
+					//piece goes here
+					newroom.gameState.boardState[row][move.col] = newroom.gameState.turn+1;
+					move.user = newroom.gameState.turn;
+					move.row = row;
+					newroom.emitToPlayers('makeMove',JSON.stringify(move));
+					newroom.nextTurn();
+					return true;
+				}
+			}
+			//not a valid move
+			return false;
+		}
 		break;
 	}
+
+	
 	//handle pw protected rooms later
 /*
 	//dont need to emit because playerJoin emits to all
@@ -120,6 +164,7 @@ gamerooms.createRoom = function(id, name, pw, type, numplayers, playersocket){
 	toEmit["game"] = newroom.game;
 	io.emit('gameRoomCreated', JSON.stringify(toEmit));
 */
+	gamerooms[newroom.id] = newroom;
 	clients.requestJoin(clients.getNameFromSocket(playersocket), id);
 
 }
@@ -145,6 +190,9 @@ gamerooms.playerJoin = function(userSocket, roomid){
 					console.log("Error: game was full");
 					return false;
 				}
+				if(room.gameState.player1!=null && room.gameState.player2!=null){
+					room.gameState.status = "Playing";
+				}
 			break;
 		}
 
@@ -160,10 +208,14 @@ gamerooms.playerJoin = function(userSocket, roomid){
 		//update game room list
 		gamerooms.broadcastAllRooms();
 		//broadcast join to all users
+		var n = clients.getNameFromSocket(userSocket);
 		for(var i=0;i<room.playersockets.length;i++){
 			//changeme
-			var toEmit = [room.id, clients.getNameFromSocket(userSocket)];
+			var toEmit = [room.id, n];
 			room.playersockets[i].emit('playerJoin', JSON.stringify(toEmit));
+		}
+		if(room.gameState.status=="Playing"){
+			room.startGame();
 		}
 		return true;
 	}else{
@@ -183,6 +235,8 @@ gamerooms.playerLeave = function(userSocket, roomid){
 			}else if(gamerooms[roomid].gameState.player2==n){
 				gamerooms[roomid].gameState.player2 = null;
 			}
+			gamerooms[roomid].gameState.status = "Waiting for Players";
+			gamerooms[roomid].emitToPlayers('gameMessage', 'gameStop');
 		break;
 	}
 	gamerooms[roomid].players.splice(i, 1);
@@ -338,6 +392,30 @@ io.on('connection', function(socket){
 
 	socket.on('leaveRoom', function(roomid){
 		clients.leaveRoom(clients.getNameFromSocket(socket), roomid);
+	});
+
+	socket.on('requestRoomInfo', function(roomid){
+		var room = gamerooms[roomid];
+		if(room!=undefined){
+			var toEmit = Object();
+			toEmit.name = room.name;
+			toEmit.pw = room.pw;
+			toEmit.id = room.id;
+			toEmit.game = room.game;
+			toEmit.players = room.numPlayers;
+			toEmit.status = room.gameState.status;
+			socket.emit('roomInfo',JSON.stringify(toEmit));
+		}else{
+			socket.emit('roomInfo', null);
+		}
+	});
+
+	//Must send an id
+	socket.on('makeMove', function(move){
+		var received = JSON.parse(move);
+		if(gamerooms[received.id]!=undefined){
+			gamerooms[received.id].makeMove(socket, received);
+		}
 	});
 });
 

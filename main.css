@@ -77,7 +77,9 @@ body {
 	padding-left:2px;
 	padding-right:2px;
 }
-
+.label{
+	padding-top:0.3em;
+}
 #container {
 	position: absolute;
 	margin: 0px;
@@ -162,7 +164,6 @@ body {
 
 #connect_four_board{
 	height:86%;
-	margin-top:10px;
 }
 
 #chatmain{
@@ -216,7 +217,7 @@ body {
 }
 
 #creategamebox{
-	top:87%;
+	top:91%;
 	width:50%;
 	font-size:50px;
 	font-size:5vw;
@@ -365,4 +366,31 @@ body {
 	padding-top:10px;
 	width:50px;
 	height:50px;
+}
+#room_info{
+	left:56.5%;
+	top:105%;
+	background-color:#111111;
+	width:22%;
+	height:15%;
+	margin:0;
+}
+#room_info .panel-heading{
+	font-size:25px;
+	font-size:1.3vw;
+	height:38%;
+}
+#room_info .panel-body{
+	color:black;
+	font-size:20px;
+	font-size:1.1vw;
+	height:62%;
+}
+#room_info .subtle{
+	font-style:italic;
+	color:gray;
+}
+#room_info .row{
+	height:50%;
+	padding-top:14px;
 }
