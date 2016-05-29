@@ -99,11 +99,17 @@ gamerooms.createRoom = function(id, name, pw, type, numplayers, playersocket){
 	newroom.numPlayers = numplayers
 	newroom.players = [];
 	newroom.playersockets = [];
+	for(var z=0;z<newroom.numPlayers;z++){
+		newroom.players.push(null);
+		newroom.playersockets.push(null);
+	}
 	gamerooms.idlist.push(id);
 	newroom.gameState = Object();
 	newroom.emitToPlayers = function(msg, val){
 		for(var i=0;i<newroom.playersockets.length;i++){
-			newroom.playersockets[i].emit(msg, val);
+			if(newroom.playersockets[i]!=null){
+				newroom.playersockets[i].emit(msg, val);
+			}
 		}
 	}
 	newroom.nextPlayer = function(curr){
@@ -119,13 +125,33 @@ gamerooms.createRoom = function(id, name, pw, type, numplayers, playersocket){
 		
 		newroom.startGame = function(){
 			newroom.emitToPlayers('gameMessage', 'gameStart');
-			newroom.playersockets[newroom.gameState.turn].emit('gameMessage', 'yourTurn');
-			newroom.playersockets[newroom.nextPlayer(newroom.gameState.turn)].emit('gameMessage', 'opponentTurn');
+			var u = newroom.playersockets[newroom.gameState.turn];
+			if(u!=null){
+				u.emit('gameMessage', 'yourTurn');
+			}
+			u = newroom.playersockets[newroom.nextPlayer(newroom.gameState.turn)];
+			if(u!=null){
+				u.emit('gameMessage', 'opponentTurn');
+			}
 		}
 		newroom.nextTurn = function(){
 			newroom.gameState.turn = newroom.nextPlayer(newroom.gameState.turn);
-			newroom.playersockets[newroom.gameState.turn].emit('gameMessage', 'yourTurn');
-			newroom.playersockets[newroom.nextPlayer(newroom.gameState.turn)].emit('gameMessage', 'opponentTurn');
+			var u = newroom.playersockets[newroom.gameState.turn];
+			if(u!=null){
+				u.emit('gameMessage', 'yourTurn');
+			}
+			u = newroom.playersockets[newroom.nextPlayer(newroom.gameState.turn)];
+			if(u!=null){
+				u.emit('gameMessage', 'opponentTurn');
+			}
+		}
+		newroom.isEmpty = function(){
+			for(var i=0;i<newroom.playersockets.length;i++){
+				if(newroom.playersockets[i]!=null){
+					return false;
+				}
+			}
+			return true;
 		}
 		newroom.makeMove = function(userSocket, move){
 			if(newroom.playersockets[newroom.gameState.turn]!=userSocket){
@@ -177,9 +203,26 @@ gamerooms.deleteRoom = function(id){
 
 gamerooms.playerJoin = function(userSocket, roomid){
 	var room = gamerooms[roomid];
-	if(room.players.length < room.numPlayers && room.playersockets.indexOf(userSocket)==-1){
-		room.playersockets.push(userSocket);
-		room.players.push(clients.getNameFromSocket(userSocket));
+	if(room.playersockets.indexOf(userSocket)==-1){
+		var inserted = false;
+		for(var l=0;l<room.playersockets.length;l++){
+			if(!room.playersockets[l]){
+				room.playersockets[l] = userSocket;
+				room.players[l] = clients.getNameFromSocket(userSocket);
+				inserted = true;
+				break;
+			}
+		}
+/*
+		if(!inserted && room.players.length >= room.numPlayers){
+			return false;	
+		}else if(!inserted){
+			console.log("Pushing");
+			console.log(room.players.length);
+			room.playersockets.push(userSocket);
+			room.players.push(clients.getNameFromSocket(userSocket));	
+		}
+*/
 		switch(room.game){
 			case "Connect Four":
 				if(room.gameState.player1==null){
@@ -212,7 +255,9 @@ gamerooms.playerJoin = function(userSocket, roomid){
 		for(var i=0;i<room.playersockets.length;i++){
 			//changeme
 			var toEmit = [room.id, n];
-			room.playersockets[i].emit('playerJoin', JSON.stringify(toEmit));
+			if(room.playersockets[i]!=null){
+				room.playersockets[i].emit('playerJoin', JSON.stringify(toEmit));
+			}
 		}
 		if(room.gameState.status=="Playing"){
 			room.startGame();
@@ -239,17 +284,19 @@ gamerooms.playerLeave = function(userSocket, roomid){
 			gamerooms[roomid].emitToPlayers('gameMessage', 'gameStop');
 		break;
 	}
-	gamerooms[roomid].players.splice(i, 1);
-	gamerooms[roomid].playersockets.splice(i, 1);
+	gamerooms[roomid].players[i] = null;
+	gamerooms[roomid].playersockets[i] = null;
 	console.log("User left room "+roomid);
 	console.log("Remaing players: "+gamerooms[roomid].players);
 	userSocket.emit('leaveStatus', 1);
-	if(gamerooms[roomid].players.length==0){
+	if(gamerooms[roomid].isEmpty()){
 		gamerooms.deleteRoom(roomid);
 	}else{
 		for(var j=0;j<gamerooms[roomid].playersockets.length;j++){
 			var toEmit = [roomid, n];
-			gamerooms[roomid].playersockets[j].emit('playerLeave', JSON.stringify(toEmit));
+			if(gamerooms[roomid].playersockets[j]!=null){
+				gamerooms[roomid].playersockets[j].emit('playerLeave', JSON.stringify(toEmit));
+			}
 		}
 	}
 	gamerooms.broadcastAllRooms();
@@ -415,6 +462,12 @@ io.on('connection', function(socket){
 		var received = JSON.parse(move);
 		if(gamerooms[received.id]!=undefined){
 			gamerooms[received.id].makeMove(socket, received);
+		}
+	});
+
+	socket.on('requestPlayerNum', function(roomid){
+		if(gamerooms[roomid]!=undefined){
+			socket.emit('playerNum', gamerooms[roomid].playersockets.indexOf(socket));
 		}
 	});
 });

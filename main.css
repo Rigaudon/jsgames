@@ -80,6 +80,23 @@ body {
 .label{
 	padding-top:0.3em;
 }
+.c4yellow{
+	background:url("res/c4yellow.png");
+}
+.c4blue{
+	background:url("res/c4blue.png");
+}
+.c4red{
+	background:url("res/c4red.png");
+}
+.c4green{
+	background:url("res/c4green.png");
+}
+.c4yellow, .c4blue, .c4red, .c4green{
+	background-size:contain;
+	background-color:#444444;
+	background-repeat:no-repeat;
+}
 #container {
 	position: absolute;
 	margin: 0px;
@@ -343,7 +360,14 @@ body {
 #c4opponent, #c4me{
 	height:7%;
 }
-
+#c4hoveranim{
+	position:absolute;
+	opacity:0.4;
+	top:-20px;
+	background-size:contain;
+	background-repeat:no-repeat;
+	display:none;
+}
 #back_to_lobby{
 	display:none;
 }
