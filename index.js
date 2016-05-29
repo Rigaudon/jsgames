@@ -104,7 +104,7 @@ gamerooms.createRoom = function(id, name, pw, type, numplayers, playersocket){
 	newroom.gameState = Object();
 	switch(type){
 		case "Connect Four":
-		newroom.gameState.player1 = playersocket;
+		newroom.gameState.player1 = null;
 		newroom.gameState.player2 = null;
 		newroom.gameState.boardState = [[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0]];
 		newroom.gameState.status = "Waiting for Players";
@@ -135,7 +135,19 @@ gamerooms.playerJoin = function(userSocket, roomid){
 	if(room.players.length < room.numPlayers && room.playersockets.indexOf(userSocket)==-1){
 		room.playersockets.push(userSocket);
 		room.players.push(clients.getNameFromSocket(userSocket));
-		
+		switch(room.game){
+			case "Connect Four":
+				if(room.gameState.player1==null){
+					room.gameState.player1 = clients.getNameFromSocket(userSocket);
+				}else if(room.gameState.player2==null){
+					room.gameState.player2 = clients.getNameFromSocket(userSocket);
+				}else{
+					console.log("Error: game was full");
+					return false;
+				}
+			break;
+		}
+
 		var toEmit = {};
 		toEmit["id"] = room.id;
 		toEmit["name"] = room.name;
@@ -149,7 +161,9 @@ gamerooms.playerJoin = function(userSocket, roomid){
 		gamerooms.broadcastAllRooms();
 		//broadcast join to all users
 		for(var i=0;i<room.playersockets.length;i++){
-			room.playersockets[i].emit('playerJoin', JSON.stringify([room.id, clients.getNameFromSocket(userSocket)]));
+			//changeme
+			var toEmit = [room.id, clients.getNameFromSocket(userSocket)];
+			room.playersockets[i].emit('playerJoin', JSON.stringify(toEmit));
 		}
 		return true;
 	}else{
@@ -161,6 +175,16 @@ gamerooms.playerJoin = function(userSocket, roomid){
 gamerooms.playerLeave = function(userSocket, roomid){
 	//remove user from room roomid
 	var i = gamerooms[roomid].playersockets.indexOf(userSocket);
+	var n = clients.getNameFromSocket(userSocket);
+	switch(gamerooms[roomid].game){
+		case "Connect Four":
+			if(gamerooms[roomid].gameState.player1==n){
+				gamerooms[roomid].gameState.player1 = null;
+			}else if(gamerooms[roomid].gameState.player2==n){
+				gamerooms[roomid].gameState.player2 = null;
+			}
+		break;
+	}
 	gamerooms[roomid].players.splice(i, 1);
 	gamerooms[roomid].playersockets.splice(i, 1);
 	console.log("User left room "+roomid);
@@ -168,6 +192,11 @@ gamerooms.playerLeave = function(userSocket, roomid){
 	userSocket.emit('leaveStatus', 1);
 	if(gamerooms[roomid].players.length==0){
 		gamerooms.deleteRoom(roomid);
+	}else{
+		for(var j=0;j<gamerooms[roomid].playersockets.length;j++){
+			var toEmit = [roomid, n];
+			gamerooms[roomid].playersockets[j].emit('playerLeave', JSON.stringify(toEmit));
+		}
 	}
 	gamerooms.broadcastAllRooms();
 }

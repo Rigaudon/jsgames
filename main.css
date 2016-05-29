@@ -17,7 +17,7 @@ body {
 	font-size: 3vw;
 	text-align: center;
 	left: 150%;
-	top: 100px;
+	top: 10%;
 	margin-left: -25%;
 	color:white;
 }
@@ -69,6 +69,15 @@ body {
 	top:0px;
 }
 
+.col-no-padding{
+	padding:0;
+}
+
+.col-min-padding{
+	padding-left:2px;
+	padding-right:2px;
+}
+
 #container {
 	position: absolute;
 	margin: 0px;
@@ -116,7 +125,6 @@ body {
 	overflow-y:scroll; 
 	color:black;
 	font-size:18px;
-	font-size:1.3vw;
 	padding:5px;
 	padding-left:10px;
 	margin:0;
@@ -226,7 +234,7 @@ body {
 }
 
 #onlinebox{
-	height:80%;
+	height:85%;
 	width:15%;
 	overflow:hidden;
 }
@@ -266,7 +274,7 @@ body {
 	top:0;
 }
 
-#create_room_box{
+#create_room_box, #settings_box{
 	margin-left:auto;
 	margin-right:auto;
 	width:40%;
@@ -274,14 +282,14 @@ body {
 	top:25%;
 }
 
-#create_room_box .panel-heading{
+#create_room_box .panel-heading, #settings_box .panel-heading{
 	background-color:#222222;
 	color:white;
 	height:20%;
 	font-size:3vw;
 }
 
-#create_room_box .panel-body{
+#create_room_box .panel-body, #settings_box .panel-body{
 	background-color:#444444;
 	color:white;
 	height:80%;
@@ -302,7 +310,7 @@ body {
 	font-size:2.5vw;
 }
 
-#create_room_panel{
+#create_room_panel, #settings_panel{
 	font-size:40px;	
 	font-size:3vw;
 	height:100%;
@@ -318,7 +326,7 @@ body {
 	margin-top:40px;
 }
 
-#close_btn{
+#close_btn, #close_btn2{
 	position:absolute;
 	top:-10px;
 	right:-10px;
@@ -331,7 +339,7 @@ body {
 	border-radius: 15px
 }
 
-#opponent, #me{
+#c4opponent, #c4me{
 	height:7%;
 }
 
@@ -339,6 +347,22 @@ body {
 	display:none;
 }
 
-#create_room_button, #create_room_button2, #back_to_lobby{
+#create_room_button, #create_room_button2, #back_to_lobby, #createmsg{
 	padding-top:14px;
+}
+
+#create_heading, #settings_heading{
+	padding-top:30px;
+}
+#settings_btn{
+	position:absolute;
+	top:0;
+	left:150%;
+	display:none;
+}
+#settings_btn a{
+	font-size:24px;
+	padding-top:10px;
+	width:50px;
+	height:50px;
 }
