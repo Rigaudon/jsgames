@@ -48,7 +48,6 @@ body {
 	height:100%;
 	padding:0;
 	margin:0;
-	min-width:85px;
 }
 
 .panel{
@@ -417,4 +416,13 @@ body {
 #room_info .row{
 	height:50%;
 	padding-top:14px;
+}
+
+#game_messages{
+	left:16%;
+	top:105%;
+	background-color:transparent;
+	width:22%;
+	height:15%;
+	margin:0;
 }

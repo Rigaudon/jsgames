@@ -37,6 +37,9 @@ ConnectFourRoom.joinedRoom = function(){
 	$("#room_info").animate({
 		top: '84%'
 	}, 500);
+	$("#game_messages").animate({
+		top: '84%'
+	}, 500);
 	activeGame = "Connect Four";
 }
 ConnectFourRoom.leaveRoom = function(){
@@ -52,6 +55,10 @@ ConnectFourRoom.leaveRoom = function(){
 	$("#room_info").animate({
 		top: '105%'
 	}, 500);
+	$("#game_messages").animate({
+		top: '105%'
+	}, 500);
+	$("#game_messages").empty();
 	socket.emit('leaveRoom', currRoom);
 	activeGame = null;
 	currRoom = null;
@@ -94,21 +101,21 @@ ConnectFourRoom.buildRoom = function(gameState){
 		for(var i=0;i<cols;i++){
 			var c4box = $("<div class='col-md-1 c4box' id='c4"+j+i+"'>");
 			c4box.click(function(){
-				var c4move = Object();
-				//c4move.row = j;
-				c4move.col = parseInt(this.id.charAt(3));
-				c4move.id = currRoom;
-				console.log("Attempting to make move "+c4move.col);
-				socket.emit('makeMove', JSON.stringify(c4move));
+				if(!$("#c4hoveranim").hasClass('nomove')){
+					var c4move = Object();
+					//c4move.row = j;
+					c4move.col = parseInt(this.id.charAt(3));
+					c4move.id = currRoom;
+					console.log("Attempting to make move "+c4move.col);
+					socket.emit('makeMove', JSON.stringify(c4move));
+				}
 			});
 
 			c4box.hover(function(){
-				$("#c4hoveranim").css('left', $("#"+this.id).position().left+'px');
-				/*
-				$("#c4hoveranim").animate({
-					//left: $("#"+this.id).position().left+'px'
-				},50);
-				*/
+				if(!$("#c4hoveranim").hasClass('nomove')){
+					$("#c4hoveranim").css('left', $("#"+this.id).position().left+'px');
+					$("#c4hoveranim").css('top', '-20px');
+				}
 			});
 			
 			if(gameState.boardState[j][i]!=0){
@@ -124,6 +131,7 @@ ConnectFourRoom.buildRoom = function(gameState){
 	active.append($("<div id='c4me'>").append($("<span class='label label-default'>").text(bottomtxt)));
 	var hover = $("<div id='c4hoveranim'>");
 	active.append(hover);
+	ConnectFourRoom.resize();
 }
 
 ConnectFourRoom.playerJoin = function(received){
@@ -145,6 +153,11 @@ ConnectFourRoom.gameMessage = function(msg){
 	switch(msg){
 		case "gameStart":
 			//add colors
+			console.log("Game started");
+			getPlayerNum(currRoom);
+			setTimeout(function(){
+				$("#c4hoveranim").css('background-image','url("res/c4'+ConnectFourRoom.colors[playernum]+'.png")');
+			},100);
 			var opponent = $("#c4opponent span").text();
 			var i = onlineUsers[0].indexOf(opponent);
 			$("#c4opponent span").removeClass('label-default');
@@ -168,7 +181,7 @@ ConnectFourRoom.gameMessage = function(msg){
 		case "opponentTurn":
 			$("#c4opponent span").css('border', '20px outset lightblue');
 			$("#c4me span").css('border', 'none');
-			$("#c4hoveranim").hide();
+			//$("#c4hoveranim").hide();
 		break;
 	}	
 }
@@ -181,8 +194,30 @@ ConnectFourRoom.makeMove = function(msg){
 		console.log("Error: received move for wrong game id");
 		return false;
 	}
+	var target = $("#c4"+received.row+received.col);
+	$("#c4hoveranim").addClass('nomove');
+	var l = target.position().left;
+	var t = target.position().top;
+	$("#c4hoveranim").css('opacity', '1');
+	$("#c4hoveranim").css('left', l+'px');
+	$("#c4hoveranim").css('top', '-20px');
+	$("#c4hoveranim").css('background-image','url("res/c4'+ConnectFourRoom.colors[received.user]+'.png")');
+	$("#c4hoveranim").show();
+	$("#c4hoveranim").animate({
+		top: t+'px'
+	}, 500,	function(){
+		$("#c4hoveranim").removeClass('nomove');
+		$("#c4hoveranim").css('opacity', '0.4');
+		$("#c4hoveranim").css('top', '-20px');
+		if(received.user==playernum){
+			//at this point, the move was already made so flip flop
+			$("#c4hoveranim").hide();
+		}
+		$("#c4hoveranim").css('background-image','url("res/c4'+ConnectFourRoom.colors[(received.user+1)%2]+'.png")');
+		
+		target.addClass('c4'+ConnectFourRoom.colors[received.user]);
+	});
 
-	$("#c4"+received.row+received.col).addClass('c4'+ConnectFourRoom.colors[received.user]);;
 
 }
 
@@ -192,31 +227,42 @@ ConnectFourRoom.victory = function(received){
 		return false;
 	}
 	getRoomInfo(currRoom);
-	$("#c4hoveranim").hide();
 	console.log(received.details);
+	setTimeout(function(){
+		$("#c4hoveranim").hide();
+		if(received.details[2]=="v"){
+			for(var i=received.details[0];i<received.details[0]+4;i++){
+				console.log("#c4"+i+received.details[1]);
+				$("#c4"+i+received.details[1]).css('background-color', 'white');
+			}
+		}else if(received.details[2]=="h"){
+			for(var i=received.details[1];i<received.details[1]+4;i++){
+				$("#c4"+received.details[0]+i).css('background-color', 'white');
+			}
+		}else if(received.details[2]=="l"){
+			var m = received.details[1];
+			for(var i=received.details[0];i<received.details[0]+4;i++){
+				$("#c4"+i+m).css('background-color', 'white');
+				m--;
+			}
+		}else if(received.details[2]=="r"){
+			var m = received.details[1];
+			for(var i=received.details[0];i<received.details[0]+4;i++){
+				$("#c4"+i+m).css('background-color', 'white');
+				m++;
+			}
+		}
+
+		var i = onlineUsers[0].indexOf(received.user);
+		$("#game_messages").append($("<span style='color:"+onlineUsers[1][i]+"'>").text(onlineUsers[0][i]));
+		$("#game_messages").append($("<span>").text(" won!"));
+		var reset_btn = $("<a class='btn btn-default' href='#' role='button'>").text("Reset game");
+		reset_btn.click(function(){
+			socket.emit('requestReset', currRoom);
+		});
+		$("#game_messages").append($("<div>").append(reset_btn));
+	}, 600);
 	
-	if(received.details[2]=="v"){
-		for(var i=received.details[0];i<received.details[0]+4;i++){
-			console.log("#c4"+i+received.details[1]);
-			$("#c4"+i+received.details[1]).css('background-color', 'white');
-		}
-	}else if(received.details[2]=="h"){
-		for(var i=received.details[1];i<received.details[1]+4;i++){
-			$("#c4"+received.details[0]+i).css('background-color', 'white');
-		}
-	}else if(received.details[2]=="l"){
-		var m = received.details[1];
-		for(var i=received.details[0];i<received.details[0]+4;i++){
-			$("#c4"+i+m).css('background-color', 'white');
-			m--;
-		}
-	}else if(received.details[2]=="r"){
-		var m = received.details[1];
-		for(var i=received.details[0];i<received.details[0]+4;i++){
-			$("#c4"+i+m).css('background-color', 'white');
-			m++;
-		}
-	}
 	
 }
 //Server com for logging in
@@ -257,7 +303,7 @@ socket.on('login status', function(status){
 
 		//Create room/join number comes in
 		$("#creategamebox").animate({
-			left: '47%'
+			left: '47.25%'
 		}, 500);
 
 		//Who's online comes in
@@ -471,7 +517,17 @@ socket.on('playerNum', function(msg){
 	console.log("Player number "+msg);
 	playernum = msg;
 	if(activeGame=="Connect Four"){
-		$("#c4hoveranim").css('background-image','url("res/c4'+ConnectFourRoom.colors[playernum]+'.png")');
+		//$("#c4hoveranim").css('background-image','url("res/c4'+ConnectFourRoom.colors[playernum]+'.png")');
+	}
+});
+
+socket.on('gameReset', function(msg){
+	console.log("Game was reset");
+	getPlayerNum(currRoom);
+	getRoomInfo(currRoom);
+	if(activeGame=="Connect Four"){
+		ConnectFourRoom.buildRoom(JSON.parse(msg));
+		$("#game_messages").empty();
 	}
 });
 
