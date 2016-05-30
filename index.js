@@ -171,7 +171,7 @@ gamerooms.createRoom = function(id, name, pw, type, numplayers, playersocket){
 					newroom.gameState.boardState[row][move.col] = newroom.gameState.turn+1;
 					move.user = newroom.gameState.turn;
 					move.row = row;
-					new_room.gameState.num_moves++;
+					newroom.gameState.num_moves++;
 					newroom.emitToPlayers('makeMove',JSON.stringify(move));
 					var userwon = newroom.checkVictory(newroom.gameState.boardState);
 					if(userwon){
