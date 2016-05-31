@@ -250,7 +250,7 @@ gamerooms.createRoom = function(id, name, pw, type, numplayers, playersocket){
 			}
 
 			function check_d_l(i, j, c){
-				if(i+c>h || j-c<0){
+				if(i+c>h || j-c<-1){
 					return false;
 				}
 				var at_position = board[i][j];
@@ -313,15 +313,17 @@ gamerooms.createRoom = function(id, name, pw, type, numplayers, playersocket){
 			newroom.gameState.boardState = [[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0]];
 			newroom.emitToPlayers('gameReset', JSON.stringify(newroom.gameState));
 			if(start){
-				newroom.emitToPlayers('gameMessage', 'gameStart');
-				var u = newroom.playersockets[newroom.gameState.turn];
-				if(u!=null){
-					u.emit('gameMessage', 'yourTurn');
-				}
-				u = newroom.playersockets[newroom.nextPlayer(newroom.gameState.turn)];
-				if(u!=null){
-					u.emit('gameMessage', 'opponentTurn');
-				}
+				setTimeout(function(){
+					newroom.emitToPlayers('gameMessage', 'gameStart');
+					var u = newroom.playersockets[newroom.gameState.turn];
+					if(u!=null){
+						u.emit('gameMessage', 'yourTurn');
+					}
+					u = newroom.playersockets[newroom.nextPlayer(newroom.gameState.turn)];
+					if(u!=null){
+						u.emit('gameMessage', 'opponentTurn');
+					}
+				}, 1000);
 			}
 		}
 		break;

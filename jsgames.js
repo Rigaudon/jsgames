@@ -148,7 +148,31 @@ ConnectFourRoom.playerLeave = function(received){
 		getRoomInfo(currRoom);
 	}
 }
-
+ConnectFourRoom.resetRoom = function(msg){
+	$("#game_messages").empty();
+	$(".c4box").each(function(index){
+		if($(this).hasClass("c4"+ConnectFourRoom.colors[0])||$(this).hasClass("c4"+ConnectFourRoom.colors[1])){
+			var dropdiv = $("<div>");
+			dropdiv.css('position', 'absolute');
+			dropdiv.css('background-image', $(this).css('background-image'));
+			dropdiv.css('height', $(this).css('height'));
+			dropdiv.css('width', $(this).css('width'));
+			dropdiv.css('top', $(this).position().top);
+			dropdiv.css('left', $(this).position().left);
+			dropdiv.css('background-size', 'contain');
+			$("#active_game_div").append(dropdiv);
+			$(this).css('background-image', 'none');
+			var dropto = $("#connect_four_board").position().top = $("#connect_four_board").height();
+			dropdiv.animate({
+				top: dropto+'px',
+				opacity: '0'
+			}, 800);
+		}
+	});
+	setTimeout(function(){
+		ConnectFourRoom.buildRoom(msg);
+	}, 800);
+}
 ConnectFourRoom.gameMessage = function(msg){
 	switch(msg){
 		case "gameStart":
@@ -174,12 +198,12 @@ ConnectFourRoom.gameMessage = function(msg){
 			$("#c4me span").addClass('label-default');
 		break;
 		case "yourTurn":
-			$("#c4me span").css('border', '20px outset lightblue');
+			$("#c4me span").css('border', '20px outset white');
 			$("#c4opponent span").css('border', 'none');
 			$("#c4hoveranim").show();
 		break;
 		case "opponentTurn":
-			$("#c4opponent span").css('border', '20px outset lightblue');
+			$("#c4opponent span").css('border', '20px outset white');
 			$("#c4me span").css('border', 'none');
 			//$("#c4hoveranim").hide();
 		break;
@@ -526,8 +550,7 @@ socket.on('gameReset', function(msg){
 	getPlayerNum(currRoom);
 	getRoomInfo(currRoom);
 	if(activeGame=="Connect Four"){
-		ConnectFourRoom.buildRoom(JSON.parse(msg));
-		$("#game_messages").empty();
+		ConnectFourRoom.resetRoom(JSON.parse(msg));
 	}
 });
 
