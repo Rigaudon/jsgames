@@ -55,7 +55,6 @@ clients.getSocketFromName = function(name){
 }
 clients.setColor = function(name, color){
 	if(!clients.name_available(name)){
-		console.log("Set "+name+"'s color to "+color);
 		clients.colors[name] = color;
 		clients.broadcastOnlineUsers();
 	}else{
@@ -72,9 +71,7 @@ clients.broadcastOnlineUsers = function(){
 }
 
 clients.requestJoin = function(name, roomid){
-	console.log("User "+name+" attempted to join room "+roomid);
 	if(gamerooms.playerJoin(clients.getSocketFromName(name), roomid)){
-		console.log("User joined successfully");
 		clients.gameRooms[name].push(roomid);
 	}
 }
@@ -105,6 +102,7 @@ gamerooms.createRoom = function(id, name, pw, type, numplayers, playersocket){
 	}
 	gamerooms.idlist.push(id);
 	newroom.gameState = Object();
+	console.log("Room "+id+" was created. Name: "+name+"; Players: "+numplayers+"; Gametype: "+type+"; Password:" +pw);
 	newroom.emitToPlayers = function(msg, val){
 		for(var i=0;i<newroom.playersockets.length;i++){
 			if(newroom.playersockets[i]!=null){
@@ -124,6 +122,7 @@ gamerooms.createRoom = function(id, name, pw, type, numplayers, playersocket){
 		newroom.gameState.status = "Waiting for Players";
 		newroom.gameState.num_moves = 0;
 		newroom.startGame = function(){
+			console.log("Room "+newroom.id+": Game was started");
 			newroom.emitToPlayers('gameMessage', 'gameStart');
 			var u = newroom.playersockets[newroom.gameState.turn];
 			if(u!=null){
@@ -181,6 +180,7 @@ gamerooms.createRoom = function(id, name, pw, type, numplayers, playersocket){
 						toEmit.user = newroom.players[newroom.gameState.turn];
 						toEmit.id = newroom.id;
 						newroom.emitToPlayers('victory', JSON.stringify(toEmit));
+						console.log("Room "+newroom.id+": User "+clients.getNameFromSocket(userSocket)+" won after "+newroom.num_moves+" moves.");
 					}else{
 						newroom.nextTurn();
 					}
@@ -288,6 +288,7 @@ gamerooms.createRoom = function(id, name, pw, type, numplayers, playersocket){
 			if(newroom.gameState.status!="Done"){
 				return false;
 			}
+			console.log("Room "+newroom.id+": Game was reset");
 			var temp = newroom.gameState.player1;
 			//switch around players
 			newroom.gameState.player1 = newroom.gameState.player2;
@@ -328,24 +329,15 @@ gamerooms.createRoom = function(id, name, pw, type, numplayers, playersocket){
 		}
 		break;
 	}
-
 	
 	//handle pw protected rooms later
-/*
-	//dont need to emit because playerJoin emits to all
-	var toEmit = {};
-	toEmit["id"] = newroom.id;
-	toEmit["name"] = newroom.name;
-	toEmit["players"] = newroom.players;
-	toEmit["game"] = newroom.game;
-	io.emit('gameRoomCreated', JSON.stringify(toEmit));
-*/
 	gamerooms[newroom.id] = newroom;
 	clients.requestJoin(clients.getNameFromSocket(playersocket), id);
 
 }
 
 gamerooms.deleteRoom = function(id){
+	console.log("Room "+id+": Room was deleted");
 	delete gamerooms[id];
 	gamerooms.idlist.splice(gamerooms.idlist.indexOf(id), 1);
 	io.emit('gameRoomDeleted', id);
@@ -354,7 +346,7 @@ gamerooms.deleteRoom = function(id){
 gamerooms.playerJoin = function(userSocket, roomid){
 	var room = gamerooms[roomid];
 	if(!room){
-		console.log("Error: tried to join invalid room");
+		console.log("Error: User "+clients.getNameFromSocket(userSocket)+" attempted to join room "+roomid+" (invalid ID)");
 		return false;
 	}
 	if(room.playersockets.indexOf(userSocket)==-1){
@@ -367,16 +359,7 @@ gamerooms.playerJoin = function(userSocket, roomid){
 				break;
 			}
 		}
-/*
-		if(!inserted && room.players.length >= room.numPlayers){
-			return false;	
-		}else if(!inserted){
-			console.log("Pushing");
-			console.log(room.players.length);
-			room.playersockets.push(userSocket);
-			room.players.push(clients.getNameFromSocket(userSocket));	
-		}
-*/
+
 		switch(room.game){
 			case "Connect Four":
 				if(room.gameState.player1==null){
@@ -384,7 +367,7 @@ gamerooms.playerJoin = function(userSocket, roomid){
 				}else if(room.gameState.player2==null){
 					room.gameState.player2 = clients.getNameFromSocket(userSocket);
 				}else{
-					console.log("Error: game was full");
+					console.log("Error: User "+clients.getNameFromSocket(userSocket)+" tried to join room "+roomid+" (game was full)");
 					return false;
 				}
 				if(room.gameState.player1!=null && room.gameState.player2!=null){
@@ -403,7 +386,7 @@ gamerooms.playerJoin = function(userSocket, roomid){
 		toEmit["gameState"] = room.gameState;
 
 		userSocket.emit('joinRoomSuccess', JSON.stringify(toEmit));
-
+		console.log("Room "+roomid+": User "+clients.getNameFromSocket(userSocket)+" joined the room");
 		//update game room list
 		gamerooms.broadcastAllRooms();
 		//broadcast join to all users
@@ -444,8 +427,7 @@ gamerooms.playerLeave = function(userSocket, roomid){
 	}
 	gamerooms[roomid].players[i] = null;
 	gamerooms[roomid].playersockets[i] = null;
-	console.log("User left room "+roomid);
-	console.log("Remaing players: "+gamerooms[roomid].players);
+	console.log("Room "+roomid+": User "+clients.getNameFromSocket(userSocket)+" left the room");
 	userSocket.emit('leaveStatus', 1);
 	if(gamerooms[roomid].isEmpty()){
 		gamerooms.deleteRoom(roomid);
@@ -504,12 +486,10 @@ function validStr(str){
 
 io.on('connection', function(socket){
 	socket.on('pickname', function(name){
-		console.log('User attempted to pick name '+name);
 		if(clients.name_available(name)){
 			clients.addClient(socket, name);
 		}else{
 			socket.emit('login status', 0);
-			console.log('Username '+name+' was already taken.');
 		}
 	});
 
@@ -550,37 +530,37 @@ io.on('connection', function(socket){
   		var errors = 0;
   		if(r.name.length==0){
   			errors++;
-  			console.log("Error making room: name was empty.");  
+  			//console.log("Error making room: name was empty.");  
   		}
   		if(r.name.length>20){
   			errors++;
-  			console.log("Error making room: name was too long: "+ r.name);
+  			//console.log("Error making room: name was too long: "+ r.name);
   		}
   		if(r.pw.length>20){
   			errors++;
-  			console.log("Error making room: password was too long: "+r.pw);
+  			//console.log("Error making room: password was too long: "+r.pw);
   		}
   		if(!validStr(r.name) || !validStr(r.pw)){
   			errors++;
-  			console.log("Error making room: name/pw was invalid.");
+  			//console.log("Error making room: name/pw was invalid.");
   		}
   		if(validGames.indexOf(r.gameType)==-1){
   			errors++;
-  			console.log("Error making room: Invalid game type: "+r.gameType);
+  			//console.log("Error making room: Invalid game type: "+r.gameType);
   		}else{
   			if(validPlayers[r.gameType].indexOf(r.numPlayers)==-1){
   				errors++;
-  				console.log("Error making room: number of players was invalid: "+r.numPlayers);
+  				//console.log("Error making room: number of players was invalid: "+r.numPlayers);
   			}
   		}
 
   		if(errors==0){
   			//make room
-  			console.log("Making room");
+  			//console.log("Creating room");
   			socket.emit('makeRoomResponse', 1);
   			gamerooms.createRoom(gamerooms.generatedId(), r.name, r.pw, r.gameType, r.numPlayers, socket);
   		}else{
-  			console.log("There were "+errors+" errors.");
+  			//console.log("There were "+errors+" errors.");
   			socket.emit('makeRoomResponse', 0);
   		}
   	});
@@ -636,16 +616,13 @@ io.on('connection', function(socket){
 	});
 });
 
-
-
 //TODO:
-//Chatroom: timestamps, who is typing, different chat rooms by #
+//Chatroom: timestamps, different chat rooms by #
 //Implement games
 //refactor ids 
 //Implement mouse tracking in game
 //Implement database
 //Make mobile version
-//clean up log messages
 
 http.listen(8080, function(){
   console.log('Listening on port 8080');
