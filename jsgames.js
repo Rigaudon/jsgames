@@ -21,6 +21,51 @@ var currentMousePos = Object();
 currentMousePos.x = 0;
 currentMousePos.y = 0;
 //Game Room code
+//Uno
+var UnoRoom = Object();
+UnoRoom.joinedRoom = function(){
+	$("#gameroombox").animate({
+		left: '-50%'
+	}, 500);
+	$("#create_room_button").hide();
+	$("#back_to_lobby").show();
+	$("#active_game_div").animate({
+		left: '42.5%'
+	}, 500);
+	$("#room_info").animate({
+		top: '84%'
+	}, 500);
+	$("#game_messages").animate({
+		top: '84%'
+	}, 500);
+	getRoomInfo(currRoom);
+	activeGame = "Uno";
+}
+UnoRoom.buildRoom = function(gameState){
+	var active = $("#active_game_div");
+	active.empty();
+}
+UnoRoom.leaveRoom = function(){
+	$("#active_game_div").animate({
+		left: '150%'
+	});
+	$("#back_to_lobby").hide();
+	$("#create_room_button").show();
+	$("#gameroombox").animate({
+		left: '42.5%'
+	}, 500);
+	$("#room_info").animate({
+		top: '105%'
+	}, 500);
+	$("#game_messages").animate({
+		top: '105%'
+	}, 500);
+	$("#game_messages").empty();
+	socket.emit('leaveRoom', currRoom);
+	activeGame = null;
+	currRoom = null;
+	playernum = null;
+}
 //Connect Four
 var ConnectFourRoom = Object();
 ConnectFourRoom.joinedRoom = function(){
@@ -66,13 +111,18 @@ ConnectFourRoom.leaveRoom = function(){
 }
 ConnectFourRoom.resize = function(){
 	var setTo = $(".c4row").height();
+	var margins = ($("#connect_four_board").width()-7*(setTo))/2;
+	if(margins < 0){
+		$(".c4row").height($("#connect_four_board").width()/7-2);
+		ConnectFourRoom.resize();
+		return;
+	}
 	$(".c4box").width(setTo);
+	//$(".c4row").height(setTo);
 	$("#c4hoveranim").width(setTo);
 	$("#c4hoveranim").height(setTo);
-	var margins = ($("#connect_four_board").width()-7*(setTo))/2;
 	$(".c4row").css("margin-left", margins+"px");
 }
-
 ConnectFourRoom.buildRoom = function(gameState){
 	var active = $("#active_game_div");
 	
@@ -241,8 +291,6 @@ ConnectFourRoom.makeMove = function(msg){
 		
 		target.addClass('c4'+ConnectFourRoom.colors[received.user]);
 	});
-
-
 }
 
 ConnectFourRoom.victory = function(received){
@@ -285,9 +333,7 @@ ConnectFourRoom.victory = function(received){
 			socket.emit('requestReset', currRoom);
 		});
 		$("#game_messages").append($("<div>").append(reset_btn));
-	}, 600);
-	
-	
+	}, 600);	
 }
 //Server com for logging in
 function attemptLogin(picked_name){
@@ -486,6 +532,10 @@ socket.on('joinRoomSuccess', function(room){
 		ConnectFourRoom.buildRoom(r.gameState);
 		ConnectFourRoom.joinedRoom();
 		break;
+		case "Uno":
+		UnoRoom.buildRoom(r.gameState);
+		UnoRoom.joinedRoom();
+		break;
 	}
 
 });
@@ -540,9 +590,6 @@ socket.on('victory', function(msg){
 socket.on('playerNum', function(msg){
 	console.log("Player number "+msg);
 	playernum = msg;
-	if(activeGame=="Connect Four"){
-		//$("#c4hoveranim").css('background-image','url("res/c4'+ConnectFourRoom.colors[playernum]+'.png")');
-	}
 });
 
 socket.on('gameReset', function(msg){
@@ -720,6 +767,9 @@ $("#back_to_lobby").click(function(){
 		case "Connect Four":
 		ConnectFourRoom.leaveRoom();
 		break;
+		case "Uno":
+		UnoRoom.leaveRoom();
+		break;
 		}
 	});
 
@@ -732,7 +782,7 @@ function validChars(str){
 var game_players = {};
 game_players["Connect Four"] = [2];
 game_players["Chess"] = [2];
-game_players["Uno"] = [2,3,4];
+game_players["Uno"] = [2,3,4,5,6,7,8,9,10];
 game_players["Checkers"] = [2];
 $("#create_game_type").change(function(){
 	var possible = game_players[$("#create_game_type").val()];
