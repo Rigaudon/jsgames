@@ -105,6 +105,7 @@ gamerooms.createRoom = function(id, name, pw, type, numplayers, playersocket){
 	}
 	gamerooms.idlist.push(id);
 	newroom.gameState = Object();
+	newroom.gameState.status = "Creating Room";
 	console.log("Room "+id+" was created. Name: "+name+"; Players: "+numplayers+"; Gametype: "+type+"; Password:" +pw);
 	newroom.emitToPlayers = function(msg, val){
 		for(var i=0;i<newroom.playersockets.length;i++){
@@ -188,6 +189,7 @@ gamerooms.createRoom = function(id, name, pw, type, numplayers, playersocket){
 							toEmit.id = c4room.id;
 							c4room.emitToPlayers('victory', JSON.stringify(toEmit));
 							console.log("Room "+c4room.id+": User "+clients.getNameFromSocket(userSocket)+" won after "+c4room.num_moves+" moves.");
+							gamerooms.broadcastAllRooms();
 						}else{
 							c4room.nextTurn();
 						}
@@ -412,7 +414,7 @@ gamerooms.createRoom = function(id, name, pw, type, numplayers, playersocket){
 		case("Uno"):
 			var unoroom = newroom;
 			unoroom.reshuffling = false;
-			unoroom.activePlayers = 0;
+			unoroom.gameState.activePlayers = 0;
 			unoroom.gameState.status = "Waiting for Players";
 			unoroom.resetDeck = function(){
 				unoroom.gameState.deck = [];
@@ -505,6 +507,7 @@ gamerooms.createRoom = function(id, name, pw, type, numplayers, playersocket){
 
 				if(startgame){
 					unoroom.gameState.status = "Preparing to start";
+					gamerooms.broadcastAllRooms();
 					setTimeout(function(){
 						unoroom.startNewGame();
 					}, 1000);
@@ -532,8 +535,8 @@ gamerooms.createRoom = function(id, name, pw, type, numplayers, playersocket){
 							unoroom.gameState.deck.push(c);
 							unoroom.gameState.playerhands[i].splice(0,1);
 						}
-						unoroom.activePlayers--;
-						if(unoroom.activePlayers==1){
+						unoroom.gameState.activePlayers--;
+						if(unoroom.gameState.activePlayers==1){
 							unoroom.gameState.status = "Done";
 							var toEmit = Object();
 							toEmit.message = 'victory';
@@ -544,6 +547,7 @@ gamerooms.createRoom = function(id, name, pw, type, numplayers, playersocket){
 							}
 							toEmit.playerName = clients.getNameFromSocket(unoroom.playersockets[toEmit.player]);
 							unoroom.emitToPlayers('gameMessage', JSON.stringify(toEmit));
+							gamerooms.broadcastAllRooms();
 						}
 					}
 				}
@@ -590,6 +594,7 @@ gamerooms.createRoom = function(id, name, pw, type, numplayers, playersocket){
 					toEmit.card = card;
 					unoroom.emitToPlayers('gameMessage', JSON.stringify(toEmit));
 					unoroom.emitTurns();
+					gamerooms.broadcastAllRooms();
 				}, delay*8);
 			}
 
@@ -725,6 +730,7 @@ gamerooms.createRoom = function(id, name, pw, type, numplayers, playersocket){
 					toEmit.playerName = clients.getNameFromSocket(unoroom.playersockets[toEmit.player]);
 					unoroom.gameState.status = "Done";
 					unoroom.emitToPlayers('gameMessage', JSON.stringify(toEmit));
+					gamerooms.broadcastAllRooms();
 				}else{
 					switch(received.card.value){
 						case "Draw 4":
@@ -857,6 +863,7 @@ gamerooms.getAllRooms = function(){
 		toEmit.players = curr.players;
 		toEmit.game = curr.game;
 		toEmit.name = curr.name;
+		toEmit.status = curr.gameState.status;
 		allrooms.push(toEmit);
 	}
 	return allrooms;

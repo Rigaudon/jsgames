@@ -261,7 +261,7 @@ body {
 }
 
 #creategamebox{
-	top:91%;
+	top:87%;
 	width:50%;
 	font-size:50px;
 	font-size:5vw;
@@ -363,10 +363,6 @@ body {
 	padding-top:4px;
 }
 
-#create_room_button2{
-	font-size:2.5vw;
-}
-
 #create_room_panel, #settings_panel{
 	font-size:40px;	
 	font-size:3vw;
@@ -417,8 +413,11 @@ body {
 	display:none;
 }
 
-#create_room_button, #create_room_button2, #back_to_lobby, #createmsg{
+#back_to_lobby, #createmsg{
 	padding-top:14px;
+}
+#create_room_button2{
+	font-size:2.1vw;
 }
 
 #create_heading, #settings_heading{
@@ -599,6 +598,27 @@ body {
   transform: translateY(10px);
   color:white;
 }
+
+.btn-big-green{
+	font-family:"adobe clean";
+	width:50%;
+	background-color: #06AB09;
+	box-shadow: 0 0 0 1px #06AB09 inset, 0 0 0 2px rgba(255, 255, 255, 0.15) inset, 0 8px 0 0 #1A6907, 0 8px 0 1px rgba(0, 0, 0, 0.4), 0 8px 8px 1px rgba(0, 0, 0, 0.5);
+}
+.btn-big-green:hover, .btn-big-green:focus{
+	background-color: #0FC512;
+    box-shadow: 0 0 0 1px #0FC512 inset, 0 0 0 2px rgba(255, 255, 255, 0.15) inset, 0 10px 0 0 #09940C, 0 10px 0 1px rgba(0, 0, 0, 0.4), 0 10px 8px 1px rgba(0, 0, 0, 0.6);
+    top: -2px;
+}
+.btn-big-green:active{
+	box-shadow: 0 0 0 1px #23FF27 inset, 0 0 0 2px rgba(255, 255, 255, 0.15) inset, 0 0 0 1px rgba(0, 0, 0, 0.4);
+  -moz-transform: translateY(10px);
+  -ms-transform: translateY(10px);
+  -webkit-transform: translateY(10px);
+  transform: translateY(10px);
+  color:white;
+}
+
 a.disabled, a.disabled:hover, a.disabled:focus, a.disabled:active{
 	background-color: #404040;
 	box-shadow: 0 0 0 1px #404040 inset, 0 0 0 2px rgba(255, 255, 255, 0.15) inset, 0 8px 0 0 #313131, 0 8px 0 1px rgba(0, 0, 0, 0.4), 0 8px 8px 1px rgba(0, 0, 0, 0.5);
@@ -690,7 +710,7 @@ a.disabled:active{
     -webkit-transition: 1.5s;
 	transition: 1.5s;
 	color:red;
-	background-image: url('res/uno/explosion.png');
+	background-image: url('res/uno/explosion2.png');
 	background-size: 100% 100%;
 	background-repeat:no-repeat;
 }

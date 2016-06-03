@@ -2,7 +2,7 @@
 <html>
 <head>
 	<title>JS Games by Michael Wu</title>
-	<script type="text/javascript" src="jquery-2.2.4.min.js"></script>
+	<script src="jquery-2.2.4.min.js"></script>
 	<script src="/socket.io/socket.io.js"></script>
 	<link rel="stylesheet" href="bootstrap-3.3.6-dist/css/bootstrap.min.css">
 	<script src="bootstrap-3.3.6-dist/js/bootstrap.min.js"></script>
@@ -11,6 +11,7 @@
 	<script src="js.cookie.js"></script>
 	<script src="jquery-ui-1.11.4/jquery-ui.min.js"></script>
 	<link rel="stylesheet" href="main.css">
+	<script src="imglist.js"></script>
 </head>
 <body>
 	<div id="container">
@@ -39,13 +40,14 @@
 				<table class="table" id="gameroomtable">
 					<thead><tr>
 						<th width="10%">Room #</th>
-						<th width="30%">Room Name</th>
-						<th width="20%">Game</th>
+						<th width="20%">Room Name</th>
+						<th width="15%">Game</th>
+						<th width="15%">Status</th>
 						<th width="30%">Players</th>
 						<th width="10%">Join</th>
 					</tr></thead>
 					<tbody>
-						<tr id="placeholder"><td colspan="5">No games to display</td></tr>
+						<tr id="placeholder"><td colspan="6">No games to display</td></tr>
 					</tbody>
 				</table>
 			</div>
@@ -53,7 +55,7 @@
 
 		<div id="creategamebox" class="box">
 
-			<a class="btn btn-success" href="#" role="button" id="create_room_button">Create a Room</a>
+			<a class="btn-big btn-big-green" href="#" role="button" id="create_room_button">Create a Room</a>
 			<a class="btn btn-default" href="#" role="button" id="back_to_lobby">
 				<span class="glyphicon glyphicon-home" aria-hidden="true"></span> Back to Lobby
 			</a>
@@ -127,7 +129,7 @@
 						</div>
 					</div>
 					<div class="row">
-						<a class="btn btn-success" href="#" role="button" id="create_room_button2">Create Room</a>
+						<a class="btn-big btn-big-green" href="#" role="button" id="create_room_button2">Create Room</a>
 						<div class="progress" id="loading">
 							<div class="progress-bar progress-bar-success progress-bar-striped active" role="progressbar" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100" style="width: 100%">
 							</div>

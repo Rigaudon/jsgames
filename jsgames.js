@@ -17,17 +17,27 @@ var activeGame = null;
 var currRoom = null;
 var onlineUsers = null;
 var playernum = null;
-var currentMousePos = Object();
-currentMousePos.x = 0;
-currentMousePos.y = 0;
+
 //Game Room code
+
+function preloadImages(imgarr){
+	for (var i = 0; i < imgarr.length; i++) {
+		$("<img />").attr("src", imgarr[i]);
+	}
+}
+
 //Uno
 var UnoRoom = Object();
 UnoRoom.selectedCard = null;
 UnoRoom.myTurn = false;
 UnoRoom.opHandSize = [];
 UnoRoom.uno_btn_disabled = false;
+UnoRoom.preloaded = false;
 UnoRoom.joinedRoom = function(){
+	if(!UnoRoom.preloaded){
+		preloadImages(unoimglist);
+		UnoRoom.preloaded = true;
+	}
 	$("#gameroombox").css('left', '-50%');
 	$("#create_room_button").hide();
 	$("#back_to_lobby").show();
@@ -395,6 +405,7 @@ UnoRoom.gameMessage = function(msg){
 //Connect Four
 var ConnectFourRoom = Object();
 ConnectFourRoom.joinedRoom = function(){
+	preloadImages(c4imglist);
 	$("#gameroombox").css('left', '-50%');
 	ConnectFourRoom.resize();
 	$("#create_room_button").hide();
@@ -799,7 +810,7 @@ socket.on('allRooms', function(rooms){
 	}
 	var tb = $("#gameroomtable tbody");
 	tb.empty();
-	tb.append($('<tr id="placeholder"><td colspan="5">No games to display</td></tr>'));
+	tb.append($('<tr id="placeholder"><td colspan="6">No games to display</td></tr>'));
 	//add all new ones
 	for(var i=0;i<r.length;i++){
 		addRoom(r[i]);
@@ -915,6 +926,7 @@ function addRoom(room){
 	tr.append($("<td>").text(room.id));
 	tr.append($("<td>").text(room.name));
 	tr.append($("<td>").text(room.game));
+	tr.append($("<td>").text(room.status));
 	//tr.append($("<td>").text(room.players));
 	tr.append(playersColor(room.players));
 	var joinbutton = $("<a class='btn btn-primary' href='#' role='button'>").text("Join Game");
@@ -922,7 +934,11 @@ function addRoom(room){
 		socket.emit('joinRoom', room.id);
 		console.log("Attempting to join room "+room.id);
 	});
-	tr.append($("<td>").append(joinbutton));
+	if(room.status=="Waiting for Players"){
+		tr.append($("<td>").append(joinbutton));
+	}else{
+		tr.append($("<td>").text("Started"));
+	}
 	gameRooms[room.id] = tr;
 	gameRooms.active++;
 	$('#gameroomtable > tbody:last-child').append(tr);
@@ -1112,8 +1128,4 @@ $(document).ready(function(){
 	if(Cookies.get('name')!=undefined){
 		$("#input_name").val(Cookies.get('name'));
 	}
-	$(document).mousemove(function(event){
-		currentMousePos.x = event.pageX;
-		currentMousePos.y = event.pageY;
-	});
 });
