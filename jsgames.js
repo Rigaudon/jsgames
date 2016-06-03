@@ -25,13 +25,15 @@ currentMousePos.y = 0;
 var UnoRoom = Object();
 UnoRoom.selectedCard = null;
 UnoRoom.myTurn = false;
+UnoRoom.opHandSize = [];
+UnoRoom.uno_btn_disabled = false;
 UnoRoom.joinedRoom = function(){
 	$("#gameroombox").css('left', '-50%');
 	$("#create_room_button").hide();
 	$("#back_to_lobby").show();
 	$("#active_game_div").css('left', '42.5%');
 	$("#room_info").css('top', '85%');
-	$("#game_messages").css('top','85%');
+	$("#game_messages").css('top','90%');
 	getRoomInfo(currRoom);
 	activeGame = "Uno";
 }
@@ -72,12 +74,29 @@ UnoRoom.buildRoom = function(room){
 	}, function(){
 		deckimg.attr('src', 'res/uno/deck.png');
 	});
+	deckimg.click(function(){
+		if(UnoRoom.myTurn){
+			var toEmit = Object();
+			toEmit.id = currRoom;
+			toEmit.requestDraw = true;
+			socket.emit('makeMove', JSON.stringify(toEmit));
+		}
+	});
 	cardrow.append(deckimg);
 
 	var discardimg = $("<img id='uno_discard' src='res/uno/blank.png'>");
 	cardrow.append(discardimg);
 
 	var unobtn = $("<a href='#' class='btn-big' id='uno_btn'>UNO</a>");
+	unobtn.click(function(){
+		if(!UnoRoom.uno_btn_disabled){
+			var toEmit = Object();
+			toEmit.callUno = true;
+			toEmit.id = currRoom;
+			socket.emit('makeMove', JSON.stringify(toEmit));
+			UnoRoom.disableUnoBtn();
+		}
+	});
 	cardrow.append(unobtn);
 	
 	var handrow = $("<div class='row uno_hand_row'>");
@@ -173,6 +192,18 @@ UnoRoom.leaveRoom = function(){
 	currRoom = null;
 	playernum = null;
 }
+UnoRoom.disableUnoBtn = function(){
+	UnoRoom.uno_btn_disabled = true;
+	$("#uno_btn").addClass('disabled');
+	console.log("HI");
+	setTimeout(function(){
+		UnoRoom.enableUnoBtn();
+	}, 4000);
+}
+UnoRoom.enableUnoBtn = function(){
+	$("#uno_btn").removeClass('disabled');
+	UnoRoom.uno_btn_disabled = false;
+}
 UnoRoom.playerJoin = function(received){
 	if(currRoom==received[0] && received[1]!=usrname){
 		var added = false;
@@ -198,12 +229,26 @@ UnoRoom.playerLeave = function(received){
 		target.text("Waiting...");
 		target.removeAttr('id');
 		target.next().removeAttr('id');
+		target.next().removeClass('hand'+UnoRoom.opHandSize[received[2]]);
+		target.next().addClass('hand0');
+		UnoRoom.opHandSize[received[2]] = 0;
 	}
+}
+UnoRoom.removeMyCard = function(card){
+	var src = card.color.toLowerCase()+card.value.toLowerCase().replace(" ", "");
+	var removed = false;
+	$(".uno_hand_row img").each(function(index){
+		if($(this).attr('src')=='res/uno/'+src+'.png' && !removed){
+			$(this).remove();
+			removed = true;
+		}
+	});
 }
 UnoRoom.gameMessage = function(msg){
 	var r = JSON.parse(msg);
 	switch(r.message){
 		case 'gameStart':
+			UnoRoom.opHandSize = [];
 			getRoomInfo(currRoom);
 		break;
 		case 'idraw':
@@ -238,12 +283,16 @@ UnoRoom.gameMessage = function(msg){
 			animimg.css('height', $(".uno_hand_row").height()/2+"px");
 			setTimeout(function(){
 				animimg.remove();
-				for(var k=0;k<8;k++){
-					if($("#uno_op_hand_"+r.player).hasClass('hand'+k)){
-						$("#uno_op_hand_"+r.player).removeClass('hand'+k);
-						$("#uno_op_hand_"+r.player).addClass('hand'+(k+1));
-						break;
-					}
+				if(!UnoRoom.opHandSize[r.player] || UnoRoom.opHandSize[r.player]==0){
+					UnoRoom.opHandSize[r.player] = 1;
+					$("#uno_op_hand_"+r.player).removeClass('hand0');
+					$("#uno_op_hand_"+r.player).addClass('hand1');
+				}else if(UnoRoom.opHandSize[r.player]<8){
+					$("#uno_op_hand_"+r.player).removeClass('hand'+UnoRoom.opHandSize[r.player]);
+					UnoRoom.opHandSize[r.player]++;
+					$("#uno_op_hand_"+r.player).addClass('hand'+UnoRoom.opHandSize[r.player]);
+				}else{
+					UnoRoom.opHandSize[r.player]++;
 				}
 			}, 800);
 		break;
@@ -271,6 +320,76 @@ UnoRoom.gameMessage = function(msg){
 			$(".uno_active").removeClass("uno_active");
 			$("#uno_op_"+r.player).addClass("uno_active");
 		break;
+		case 'makeMove':
+			var imgname;
+			if(r.card.color=="Wild"){
+				if(r.card.value=="Draw 4"){
+					imgname = 'wilddraw4'+r.card.selectedColor.toLowerCase();
+				}else{
+					imgname = 'wild'+r.card.selectedColor.toLowerCase();
+				}
+			}else{
+				imgname = r.card.color.toLowerCase()+r.card.value.toLowerCase().replace(" ", "");
+			}
+			
+			if(r.player!=playernum){
+				var l = ($("#uno_op_"+r.player).position().left+$("#uno_op_"+r.player).width()/2);
+				var t = $("#uno_op_"+r.player).position().top;
+				var h = $(".uno_hand_row").height()/2;
+				//this assumes 20px margins;;
+				var animimg= $("<img class='dropdiv' src='res/uno/"+imgname+".png' style='position:absolute;top:"+t+"px;left:+"+l+"px' height='"+h+"px'>");
+				$("#active_game_div").append(animimg);
+
+				var orig = $("#uno_discard").position();
+				animimg.css('left', (orig.left+20)+"px");
+				animimg.css('top', orig.top+"px");
+				animimg.css('height',  $("#uno_deck").height()+"px");
+				setTimeout(function(){
+					animimg.remove();
+					if(UnoRoom.opHandSize[r.player]<=8){
+						$("#uno_op_hand_"+r.player).removeClass('hand'+UnoRoom.opHandSize[r.player]);
+						UnoRoom.opHandSize[r.player]--;
+						$("#uno_op_hand_"+r.player).addClass('hand'+UnoRoom.opHandSize[r.player]);
+					}else{
+						UnoRoom.opHandSize[r.player]--;
+					}
+					$("#uno_discard").attr('src', 'res/uno/'+imgname+'.png');
+				}, 800);
+
+			}else{
+				$("#uno_discard").attr('src', 'res/uno/'+imgname+'.png');
+				UnoRoom.removeMyCard(r.card);
+			}
+		break;
+		case 'victory':
+			getRoomInfo(currRoom);
+			var i = onlineUsers[0].indexOf(r.playerName);
+			$("#game_messages").append($("<span style='color:"+onlineUsers[1][i]+"'>").text(onlineUsers[0][i]));
+			$("#game_messages").append($("<span>").text(" won!"));
+			UnoRoom.myTurn = false;
+		break;
+		case 'callUno':
+			var yell_uno = $("<div class='yell_uno'>").text("UNO!");
+			var outerwidth = 290/2;
+			if(r.player!=playernum){
+				var l = ($("#uno_op_"+r.player).position().left+$("#uno_op_"+r.player).outerWidth()/2)-outerwidth/2;
+				var t = $("#uno_op_"+r.player).position().top;
+				yell_uno.css('top', t+'px');
+				yell_uno.css('left', l+'px');
+			}else{
+				var l = $(".uno_hand_row").position().left+$(".uno_hand_row").outerWidth()/2-outerwidth;
+				var t = $(".uno_hand_row").position().top;
+				yell_uno.css('top', t+'px');
+				yell_uno.css('left', l+'px');
+			}
+			$("#active_game_div").append(yell_uno);
+			yell_uno.css('top', ($("#active_game_div").height()/2-200)+'px');
+			yell_uno.css('left', ($("#active_game_div").width()/2-outerwidth)+'px');
+			yell_uno.css('opacity', '0');
+			setTimeout(function(){
+				yell_uno.remove();
+			}, 1500);
+		break;
 	}
 }
 //Connect Four
@@ -282,8 +401,8 @@ ConnectFourRoom.joinedRoom = function(){
 	$("#back_to_lobby").show();
 	$("#active_game_div").css('left', '42.5%');
 	getRoomInfo(currRoom);
-	$("#room_info").css('top', '85%');
-	$("#game_messages").css('top', '85%');
+	$("#room_info").css('top', '84%');
+	$("#game_messages").css('top', '84%');
 	activeGame = "Connect Four";
 }
 ConnectFourRoom.leaveRoom = function(){
@@ -486,7 +605,7 @@ ConnectFourRoom.victory = function(received){
 		return false;
 	}
 	getRoomInfo(currRoom);
-	console.log(received.details);
+
 	setTimeout(function(){
 		$("#c4hoveranim").hide();
 		if(received.details[2]=="v"){
@@ -812,8 +931,10 @@ function addRoom(room){
 	function playersColor(players){
 		var td = $("<td>");
 		for(var i=0;i<players.length;i++){
-			var k = onlineUsers[0].indexOf(players[i]);
-			td.append($("<span>").css('color',onlineUsers[1][k]).text(onlineUsers[0][k]));
+			if(players[i]){
+				var k = onlineUsers[0].indexOf(players[i]);
+				td.append($("<span>").css('color',onlineUsers[1][k]).text(onlineUsers[0][k]+" "));		
+			}
 		}
 		return td;
 	}

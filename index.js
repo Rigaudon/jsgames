@@ -118,78 +118,78 @@ gamerooms.createRoom = function(id, name, pw, type, numplayers, playersocket){
 	switch(type){
 		//Includes: startGame(), nextPlayer(curr), nextTurn(), isEmpty(), makeMove(userSocket, move), checkVictory(board), reset(), playerJoin(userSocket)
 		case "Connect Four":
-
-			newroom.gameState.player1 = null;
-			newroom.gameState.player2 = null;
-			newroom.gameState.turn = 0;
-			newroom.gameState.boardState = [[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0]];
-			newroom.gameState.status = "Waiting for Players";
-			newroom.gameState.num_moves = 0;
-			newroom.nextPlayer = function(curr){
-				return (curr+1)%newroom.numPlayers;
+			var c4room = newroom;
+			c4room.gameState.player1 = null;
+			c4room.gameState.player2 = null;
+			c4room.gameState.turn = 0;
+			c4room.gameState.boardState = [[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0]];
+			c4room.gameState.status = "Waiting for Players";
+			c4room.gameState.num_moves = 0;
+			c4room.nextPlayer = function(curr){
+				return (curr+1)%c4room.numPlayers;
 			}
-			newroom.startGame = function(){
-				console.log("Room "+newroom.id+": Game was started");
-				newroom.emitToPlayers('gameMessage', 'gameStart');
-				var u = newroom.playersockets[newroom.gameState.turn];
+			c4room.startGame = function(){
+				console.log("Room "+c4room.id+": Game was started");
+				c4room.emitToPlayers('gameMessage', 'gameStart');
+				var u = c4room.playersockets[c4room.gameState.turn];
 				if(u!=null){
 					u.emit('gameMessage', 'yourTurn');
 				}
-				u = newroom.playersockets[newroom.nextPlayer(newroom.gameState.turn)];
+				u = c4room.playersockets[c4room.nextPlayer(c4room.gameState.turn)];
 				if(u!=null){
 					u.emit('gameMessage', 'opponentTurn');
 				}
 			}
-			newroom.nextTurn = function(){
-				newroom.gameState.turn = newroom.nextPlayer(newroom.gameState.turn);
-				var u = newroom.playersockets[newroom.gameState.turn];
+			c4room.nextTurn = function(){
+				c4room.gameState.turn = c4room.nextPlayer(c4room.gameState.turn);
+				var u = c4room.playersockets[c4room.gameState.turn];
 				if(u!=null){
 					u.emit('gameMessage', 'yourTurn');
 				}
-				u = newroom.playersockets[newroom.nextPlayer(newroom.gameState.turn)];
+				u = c4room.playersockets[c4room.nextPlayer(c4room.gameState.turn)];
 				if(u!=null){
 					u.emit('gameMessage', 'opponentTurn');
 				}
 			}
-			newroom.isEmpty = function(){
-				for(var i=0;i<newroom.playersockets.length;i++){
-					if(newroom.playersockets[i]!=null){
+			c4room.isEmpty = function(){
+				for(var i=0;i<c4room.playersockets.length;i++){
+					if(c4room.playersockets[i]!=null){
 						return false;
 					}
 				}
 				return true;
 			}
-			newroom.makeMove = function(userSocket, move){
-				if(newroom.playersockets[newroom.gameState.turn]!=userSocket){
+			c4room.makeMove = function(userSocket, move){
+				if(c4room.playersockets[c4room.gameState.turn]!=userSocket){
 					//prob not log... itll fill up fast
 					return false;	
 				}
-				if(move.id!=newroom.id){
+				if(move.id!=c4room.id){
 					return false;
 				}
-				if(newroom.gameState.status!="Playing"){
+				if(c4room.gameState.status!="Playing"){
 					return false;
 				}
 
 				for(var row=5;row>=0;row--){
-					if(newroom.gameState.boardState[row][move.col]==0){
+					if(c4room.gameState.boardState[row][move.col]==0){
 						//piece goes here
-						newroom.gameState.boardState[row][move.col] = newroom.gameState.turn+1;
-						move.user = newroom.gameState.turn;
+						c4room.gameState.boardState[row][move.col] = c4room.gameState.turn+1;
+						move.user = c4room.gameState.turn;
 						move.row = row;
-						newroom.gameState.num_moves++;
-						newroom.emitToPlayers('makeMove',JSON.stringify(move));
-						var userwon = newroom.checkVictory(newroom.gameState.boardState);
+						c4room.gameState.num_moves++;
+						c4room.emitToPlayers('makeMove',JSON.stringify(move));
+						var userwon = c4room.checkVictory(c4room.gameState.boardState);
 						if(userwon){
-							newroom.gameState.status = "Done";
+							c4room.gameState.status = "Done";
 							var toEmit = Object();
 							toEmit.details = userwon;
-							toEmit.user = newroom.players[newroom.gameState.turn];
-							toEmit.id = newroom.id;
-							newroom.emitToPlayers('victory', JSON.stringify(toEmit));
-							console.log("Room "+newroom.id+": User "+clients.getNameFromSocket(userSocket)+" won after "+newroom.num_moves+" moves.");
+							toEmit.user = c4room.players[c4room.gameState.turn];
+							toEmit.id = c4room.id;
+							c4room.emitToPlayers('victory', JSON.stringify(toEmit));
+							console.log("Room "+c4room.id+": User "+clients.getNameFromSocket(userSocket)+" won after "+c4room.num_moves+" moves.");
 						}else{
-							newroom.nextTurn();
+							c4room.nextTurn();
 						}
 						return true;
 					}
@@ -197,7 +197,7 @@ gamerooms.createRoom = function(id, name, pw, type, numplayers, playersocket){
 				//not a valid move
 				return false;
 			}
-			newroom.checkVictory = function(board){
+			c4room.checkVictory = function(board){
 				var connect = 4;
 				var h = board.length;
 				var w = board[0].length;
@@ -289,51 +289,51 @@ gamerooms.createRoom = function(id, name, pw, type, numplayers, playersocket){
 				}
 				return false;
 			}
-			newroom.reset = function(){
-				if(newroom.gameState.status!="Done"){
+			c4room.reset = function(){
+				if(c4room.gameState.status!="Done"){
 					return false;
 				}
-				console.log("Room "+newroom.id+": Game was reset");
-				var temp = newroom.gameState.player1;
+				console.log("Room "+c4room.id+": Game was reset");
+				var temp = c4room.gameState.player1;
 				//switch around players
-				newroom.gameState.player1 = newroom.gameState.player2;
-				newroom.gameState.player2 = temp;
+				c4room.gameState.player1 = c4room.gameState.player2;
+				c4room.gameState.player2 = temp;
 
-				temp = newroom.players[0];
-				newroom.players[0] = newroom.players[1];
-				newroom.players[1] = temp;
+				temp = c4room.players[0];
+				c4room.players[0] = c4room.players[1];
+				c4room.players[1] = temp;
 
-				temp = newroom.playersockets[0];
-				newroom.playersockets[0] = newroom.playersockets[1];
-				newroom.playersockets[1] = temp;
+				temp = c4room.playersockets[0];
+				c4room.playersockets[0] = c4room.playersockets[1];
+				c4room.playersockets[1] = temp;
 
 				var start = false;
-				if(newroom.gameState.player1 && newroom.gameState.player2){
-					newroom.gameState.status = "Playing";
+				if(c4room.gameState.player1 && c4room.gameState.player2){
+					c4room.gameState.status = "Playing";
 					start = true;
 				}else{
-					newroom.gameState.status = "Waiting for Players";
+					c4room.gameState.status = "Waiting for Players";
 				}
-				newroom.gameState.turn = 0;
-				newroom.gameState.num_moves = 0;
-				newroom.gameState.boardState = [[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0]];
-				newroom.emitToPlayers('gameReset', JSON.stringify(newroom.gameState));
+				c4room.gameState.turn = 0;
+				c4room.gameState.num_moves = 0;
+				c4room.gameState.boardState = [[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0]];
+				c4room.emitToPlayers('gameReset', JSON.stringify(c4room.gameState));
 				if(start){
 					setTimeout(function(){
-						newroom.emitToPlayers('gameMessage', 'gameStart');
-						var u = newroom.playersockets[newroom.gameState.turn];
+						c4room.emitToPlayers('gameMessage', 'gameStart');
+						var u = c4room.playersockets[c4room.gameState.turn];
 						if(u!=null){
 							u.emit('gameMessage', 'yourTurn');
 						}
-						u = newroom.playersockets[newroom.nextPlayer(newroom.gameState.turn)];
+						u = c4room.playersockets[c4room.nextPlayer(c4room.gameState.turn)];
 						if(u!=null){
 							u.emit('gameMessage', 'opponentTurn');
 						}
 					}, 1000);
 				}
 			}
-			newroom.playerJoin = function(userSocket){
-				var room = newroom;
+			c4room.playerJoin = function(userSocket){
+				var room = c4room;
 				
 				if(room.playersockets.indexOf(userSocket)==-1){
 					for(var l=0;l<room.playersockets.length;l++){
@@ -381,38 +381,41 @@ gamerooms.createRoom = function(id, name, pw, type, numplayers, playersocket){
 					return false;
 				}
 			}
-			newroom.playerLeave = function(userSocket){
+			c4room.playerLeave = function(userSocket){
 				//remove user from room roomid
-				var i = newroom.playersockets.indexOf(userSocket);
+				var i = c4room.playersockets.indexOf(userSocket);
 				var n = clients.getNameFromSocket(userSocket);
 
-				if(newroom.gameState.player1==n){
-					newroom.gameState.player1 = null;
-				}else if(newroom.gameState.player2==n){
-					newroom.gameState.player2 = null;
+				if(c4room.gameState.player1==n){
+					c4room.gameState.player1 = null;
+				}else if(c4room.gameState.player2==n){
+					c4room.gameState.player2 = null;
 				}
-				if(newroom.gameState.status!="Done"){
-					newroom.gameState.status = "Waiting for Players";
+				if(c4room.gameState.status!="Done"){
+					c4room.gameState.status = "Waiting for Players";
 				}
 				
-				newroom.emitToPlayers('gameMessage', 'gameStop');
-				newroom.players[i] = null;
-				newroom.playersockets[i] = null;
-				console.log("Room "+newroom.id+": User "+clients.getNameFromSocket(userSocket)+" left the room");
+				c4room.emitToPlayers('gameMessage', 'gameStop');
+				c4room.players[i] = null;
+				c4room.playersockets[i] = null;
+				console.log("Room "+c4room.id+": User "+clients.getNameFromSocket(userSocket)+" left the room");
 				userSocket.emit('leaveStatus', 1);
-				if(newroom.isEmpty()){
-					gamerooms.deleteRoom(newroom.id);
+				if(c4room.isEmpty()){
+					gamerooms.deleteRoom(c4room.id);
 				}else{
-					newroom.emitToPlayers('playerLeave', JSON.stringify([newroom.id, n]));
+					c4room.emitToPlayers('playerLeave', JSON.stringify([c4room.id, n]));
 				}
 				gamerooms.broadcastAllRooms();
 			}
 
 		break;
 		case("Uno"):
-			newroom.gameState.status = "Waiting for Players";
-			newroom.resetDeck = function(){
-				newroom.gameState.deck = [];
+			var unoroom = newroom;
+			unoroom.reshuffling = false;
+			unoroom.activePlayers = 0;
+			unoroom.gameState.status = "Waiting for Players";
+			unoroom.resetDeck = function(){
+				unoroom.gameState.deck = [];
 				var cardtypes = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "Skip", "Reverse", "Draw 2"];
 				for(var c=0;c<4;c++){
 					var color;
@@ -434,194 +437,400 @@ gamerooms.createRoom = function(id, name, pw, type, numplayers, playersocket){
 						var card = Object();
 						card.color = color;
 						card.value = cardtypes[i];
-						newroom.gameState.deck.push(card);
+						unoroom.gameState.deck.push(card);
 						if(i!=0){
 							var card2 = Object();
 							card2.color = color;
 							card2.value = cardtypes[i];
-							newroom.gameState.deck.push(card2);
+							unoroom.gameState.deck.push(card2);
 						}
 					}
 					var wildcard = Object();
 					wildcard.color = "Wild";
 					wildcard.value = "None";
-					newroom.gameState.deck.push(wildcard);
+					unoroom.gameState.deck.push(wildcard);
 					var wild4 = Object();
 					wild4.color = "Wild";
 					wild4.value = "Draw 4";
-					newroom.gameState.deck.push(wild4);
+					unoroom.gameState.deck.push(wild4);
 				}
 
 			}
-			newroom.isEmpty = function(){
-				for(var l=0;l<newroom.playersockets.length;l++){
-					if(newroom.playersockets[l]){
+			unoroom.isEmpty = function(){
+				for(var l=0;l<unoroom.playersockets.length;l++){
+					if(unoroom.playersockets[l]){
 						return false;
 					}
 				}
 				return true;
 			}
-			newroom.playerJoin = function(userSocket){
-				if(newroom.playersockets.indexOf(userSocket)!=-1){
+			unoroom.playerJoin = function(userSocket){
+				if(unoroom.playersockets.indexOf(userSocket)!=-1){
 					userSocket.emit('joinRoomFailure', 'Full');
 					return false;
 				}
-				if(newroom.gameState.status!="Waiting for Players"){
+				if(unoroom.gameState.status!="Waiting for Players"){
 					userSocket.emit('joinRoomFailure', 'Not accepting players');
 					return false;
 				}
-				for(var l=0;l<newroom.playersockets.length;l++){
-					if(!newroom.playersockets[l]){
-						newroom.playersockets[l] = userSocket;
-						newroom.players[l] = clients.getNameFromSocket(userSocket);
+				for(var l=0;l<unoroom.playersockets.length;l++){
+					if(!unoroom.playersockets[l]){
+						unoroom.playersockets[l] = userSocket;
+						unoroom.players[l] = clients.getNameFromSocket(userSocket);
 						break;
 					}
 				}
 
 				var startgame = true;
-				for(var l=0;l<newroom.playersockets.length;l++){
-					if(!newroom.playersockets[l]){
+				for(var l=0;l<unoroom.playersockets.length;l++){
+					if(!unoroom.playersockets[l]){
 						startgame = false;
 					}
 				}
 				
 				var toEmit = {};
-				toEmit["id"] = newroom.id;
-				toEmit["name"] = newroom.name;
-				toEmit["players"] = newroom.players;
-				toEmit["game"] = newroom.game;
-				toEmit["gameState"] = newroom.gameState;
+				toEmit["id"] = unoroom.id;
+				toEmit["name"] = unoroom.name;
+				toEmit["players"] = unoroom.players;
+				toEmit["game"] = unoroom.game;
+				toEmit["gameState"] = unoroom.gameState;
 
 				userSocket.emit('joinRoomSuccess', JSON.stringify(toEmit));
-				console.log("Room "+newroom.id+": User "+clients.getNameFromSocket(userSocket)+" joined the room");
+				console.log("Room "+unoroom.id+": User "+clients.getNameFromSocket(userSocket)+" joined the room");
 				//update game room list
 				gamerooms.broadcastAllRooms();
 				//broadcast join to all users
 				var n = clients.getNameFromSocket(userSocket);
-				newroom.emitToPlayers('playerJoin', JSON.stringify([newroom.id, n, newroom.players.indexOf(n)]));
+				unoroom.emitToPlayers('playerJoin', JSON.stringify([unoroom.id, n, unoroom.players.indexOf(n)]));
 
 				if(startgame){
-					newroom.gameState.status = "Preparing to start";
+					unoroom.gameState.status = "Preparing to start";
 					setTimeout(function(){
-						newroom.startNewGame();
+						unoroom.startNewGame();
 					}, 1000);
 				}
 				return true;
 			}
-			newroom.playerLeave = function(userSocket){
+			unoroom.playerLeave = function(userSocket){
 				//remove user from room roomid
-				var i = newroom.playersockets.indexOf(userSocket);
+				var i = unoroom.playersockets.indexOf(userSocket);
 				var n = clients.getNameFromSocket(userSocket);
 				
-				newroom.players[i] = null;
-				newroom.playersockets[i] = null;
-				console.log("Room "+newroom.id+": User "+clients.getNameFromSocket(userSocket)+" left the room");
+				unoroom.players[i] = null;
+				unoroom.playersockets[i] = null;
+				console.log("Room "+unoroom.id+": User "+clients.getNameFromSocket(userSocket)+" left the room");
 				userSocket.emit('leaveStatus', 1);
-				if(newroom.isEmpty()){
-					gamerooms.deleteRoom(newroom.id);
+				if(unoroom.isEmpty()){
+					gamerooms.deleteRoom(unoroom.id);
 				}else{
-					newroom.emitToPlayers('playerLeave', JSON.stringify([newroom.id, n, i]));
+					unoroom.emitToPlayers('playerLeave', JSON.stringify([unoroom.id, n, i]));
 					//if only one player left, player wins.
+					if(unoroom.gameState.status=="Playing"){
+						//dump cards to discard
+						while(unoroom.gameState.playerhands[i].length>0){
+							var c = unoroom.gameState.playerhands[i][0];
+							unoroom.gameState.deck.push(c);
+							unoroom.gameState.playerhands[i].splice(0,1);
+						}
+						unoroom.activePlayers--;
+						if(unoroom.activePlayers==1){
+							unoroom.gameState.status = "Done";
+							var toEmit = Object();
+							toEmit.message = 'victory';
+							for(var i=0;i<unoroom.playersockets.length;i++){
+								if(unoroom.playersockets[i]){
+									toEmit.player = i;
+								}
+							}
+							toEmit.playerName = clients.getNameFromSocket(unoroom.playersockets[toEmit.player]);
+							unoroom.emitToPlayers('gameMessage', JSON.stringify(toEmit));
+						}
+					}
 				}
+				
 				gamerooms.broadcastAllRooms();
 			}
-			newroom.startNewGame = function(){
-				newroom.resetDeck();
-				newroom.gameState.discard = [];
-				newroom.gameState.activeCard = null;
-				newroom.gameState.status = "Dealing";
+			unoroom.startNewGame = function(){
+				unoroom.resetDeck();
+				unoroom.gameState.discard = [];
+				unoroom.gameState.activeCard = null;
+				unoroom.gameState.activePlayers = unoroom.numPlayers;
+				unoroom.gameState.unoSafe = [];
+				for(var i=0;i<unoroom.gameState.activePlayers;i++){
+					unoroom.gameState.unoSafe.push(true);
+				}
+				unoroom.gameState.status = "Dealing";
 				var toEmit = {};
 				toEmit['message'] = 'gameStart';
-				newroom.emitToPlayers('gameMessage', JSON.stringify(toEmit));
-				newroom.gameState.playerhands = [];
-				newroom.gameState.turn = 0;
-				newroom.gameState.direction = 1;
+				unoroom.emitToPlayers('gameMessage', JSON.stringify(toEmit));
+				unoroom.gameState.playerhands = [];
+				unoroom.gameState.turn = 0;
+				unoroom.gameState.direction = 1;
 				var delay = 500;
-				for(var l=0;l<newroom.playersockets.length;l++){
-					newroom.gameState.playerhands[l] = [];
-					newroom.dealRandomCardsToPlayer(7, l, delay);
+				for(var l=0;l<unoroom.playersockets.length;l++){
+					unoroom.gameState.playerhands[l] = [];
+					unoroom.dealRandomCardsToPlayer(7, l, delay);
 				}
-				newroom.gameState.status = "Playing";
+				unoroom.gameState.status = "Playing";
 				//find starting card
 				setTimeout(function(){
-					var i = Math.floor(Math.random()*newroom.gameState.deck.length);
-					var card = newroom.gameState.deck[i];
+					var i = Math.floor(Math.random()*unoroom.gameState.deck.length);
+					var card = unoroom.gameState.deck[i];
 					var nums = ["0","1","2","3","4","5","6","7","8","9"];
 					//for convenience, starting card has to be number
 					while(nums.indexOf(card.value)==-1){
-						i = Math.floor(Math.random()*newroom.gameState.deck.length);
-						card = newroom.gameState.deck[i];
+						i = Math.floor(Math.random()*unoroom.gameState.deck.length);
+						card = unoroom.gameState.deck[i];
 					}
-					newroom.gameState.activeCard = card;
-					newroom.gameState.deck.splice(i, 1);
-					newroom.gameState.discard.push(card);
+					unoroom.gameState.activeCard = card;
+					unoroom.gameState.deck.splice(i, 1);
+					unoroom.gameState.discard.push(card);
 					var toEmit = Object();
 					toEmit.message = 'firstCard';
 					toEmit.card = card;
-					newroom.emitToPlayers('gameMessage', JSON.stringify(toEmit));
-					newroom.emitTurns();
+					unoroom.emitToPlayers('gameMessage', JSON.stringify(toEmit));
+					unoroom.emitTurns();
 				}, delay*8);
 			}
 
-			newroom.emitTurns = function(){
-				for(var j=0;j<newroom.playersockets.length;j++){
+			unoroom.emitTurns = function(){
+				for(var j=0;j<unoroom.playersockets.length;j++){
 					var toEmit = Object();
-					if(j==newroom.gameState.turn){
+					if(j==unoroom.gameState.turn){
 						toEmit.message = 'yourTurn';
 					}else{
 						toEmit.message = 'opponentTurn';
-						toEmit.player = newroom.gameState.turn;
+						toEmit.player = unoroom.gameState.turn;
 					}
-					newroom.playersockets[j].emit('gameMessage', JSON.stringify(toEmit));
+					unoroom.playersockets[j].emit('gameMessage', JSON.stringify(toEmit));
 				}
 			}
-			newroom.dealRandomCardsToPlayer = function(numCards, playerNum, delay){
+			unoroom.dealRandomCardsToPlayer = function(numCards, playerNum, delay){
+				if(unoroom.reshuffling){
+					setTimeout(function(){ unoroom.dealRandomCardsToPlayer(numCards, playerNum, delay); },500);
+				}
 				if(numCards>0){
-					var i = Math.floor(Math.random()*newroom.gameState.deck.length);
-					var card = newroom.gameState.deck[i];
-					newroom.gameState.playerhands[playerNum].push(card);
-					newroom.gameState.deck.splice(i, 1);
-					for(var k=0;k<newroom.playersockets.length;k++){
+					if(unoroom.gameState.deck.length<3){
+						//1 because we skip the active (top) card
+						unoroom.reshuffling = true;
+						while(unoroom.gameState.discard.length>1){
+							var c = unoroom.gameState.discard[0];
+							unoroom.gameState.discard.splice(0,1);
+							unoroom.gameState.deck.push(c);
+						}
+						unoroom.reshuffling = false;
+					}
+					if(!unoroom.playersockets[playerNum]){
+						return false;
+					}
+					if(unoroom.gameState.deck.length==0){
+						return false;
+					}
+					var i = Math.floor(Math.random()*unoroom.gameState.deck.length);
+					var card = unoroom.gameState.deck[i];
+					unoroom.gameState.playerhands[playerNum].push(card);
+					unoroom.gameState.deck.splice(i, 1);
+					if(unoroom.gameState.playerhands[playerNum].length>1){
+						unoroom.gameState.unoSafe[playerNum] = true;
+					}
+					for(var k=0;k<unoroom.playersockets.length;k++){
 						if(k==playerNum){
 							//emit the card
 							var toEmit = Object();
 							toEmit.message = 'idraw';
 							toEmit.color = card.color;
 							toEmit.value = card.value;
-							newroom.playersockets[k].emit('gameMessage', JSON.stringify(toEmit));
+							unoroom.playersockets[k].emit('gameMessage', JSON.stringify(toEmit));
 						}else{
 							//emit that the player drew a card
 							var toEmit = Object();
 							toEmit.message = 'playerdraw';
 							toEmit.player = playerNum;
-							newroom.playersockets[k].emit('gameMessage', JSON.stringify(toEmit));
+							unoroom.playersockets[k].emit('gameMessage', JSON.stringify(toEmit));
 						}
 					}
 					setTimeout(function(){
-						newroom.dealRandomCardsToPlayer(numCards-1, playerNum, delay);
+						unoroom.dealRandomCardsToPlayer(numCards-1, playerNum, delay);
 					}, delay);
+					return card;
 				}
 			}
-			newroom.makeMove = function(userSocket, received){
-				if(received.id!=newroom.id){
+			unoroom.makeMove = function(userSocket, received){
+				var i = unoroom.playersockets.indexOf(userSocket);
+				if(received.id!=unoroom.id){
+					//wrong room
 					return false;
 				}
-				var i = newroom.playersockets.indexOf(userSocket);
-				if(i!=newroom.gameState.turn){
+				if(unoroom.gameState.status!="Playing"){
+					//can't make a move if not playing
 					return false;
 				}
-				if(!newroom.playerHasCard(i, received.card)){
+				if(i==-1){
+					//user is not in this room
 					return false;
+				}
+				if(received.callUno){
+					unoroom.callUno(i);
+					return true;
+				}
+				if(i!=unoroom.gameState.turn){
+					//not the user's turn
+					return false;
+				}
+				
+				if(received.requestDraw){
+					var dealt = unoroom.dealRandomCardsToPlayer(1, i, 0);
+					if(!unoroom.isPlayable(dealt)){
+						unoroom.nextPlayer();
+						unoroom.emitTurns();
+					}
+					return true;
+				}
+				if(!unoroom.playerHasCard(i, received.card)){
+					return false;
+				}
+				if(!unoroom.isPlayable(received.card)){
+					return false;
+				}
+				
+				//console.log("Valid");
+				unoroom.removeCardFromPlayer(i, received.card);
+				unoroom.gameState.discard.push(received.card);
+				unoroom.gameState.nextAny = false;
+
+				if(received.card.color=="Wild"){
+					var newcolor = received.card.selectedColor;
+					if(!received.card.selectedColor){
+						newcolor = "Red";
+					}
+					unoroom.gameState.activeCard.color = newcolor;
+					unoroom.gameState.activeCard.value = received.card.value;
+				}else{
+					unoroom.gameState.activeCard.color = received.card.color;
+					unoroom.gameState.activeCard.value = received.card.value;
+				}
+				//console.log("Emitting");
+
+				var toEmit = Object();
+				toEmit.message = 'makeMove';
+				toEmit.player = i;
+				toEmit.card = received.card;
+				unoroom.emitToPlayers('gameMessage', JSON.stringify(toEmit));
+
+				var victory = unoroom.checkVictory();
+				if(victory[0]){
+					var toEmit = Object();
+					toEmit.message = 'victory';
+					toEmit.player = victory[1];
+					toEmit.playerName = clients.getNameFromSocket(unoroom.playersockets[toEmit.player]);
+					unoroom.gameState.status = "Done";
+					unoroom.emitToPlayers('gameMessage', JSON.stringify(toEmit));
+				}else{
+					switch(received.card.value){
+						case "Draw 4":
+							unoroom.nextPlayer();
+							unoroom.dealRandomCardsToPlayer(4, unoroom.gameState.turn, 500);
+						break;
+						case "Draw 2":
+							unoroom.nextPlayer();
+							unoroom.dealRandomCardsToPlayer(2, unoroom.gameState.turn, 500);
+						break;
+						case "Reverse":
+							if(unoroom.gameState.direction==1){
+								unoroom.gameState.direction = -1;
+							}else{
+								unoroom.gameState.direction = 1;
+							}
+							if(unoroom.gameState.activePlayers==2){
+								unoroom.nextPlayer();
+							}
+						break;
+						case "Skip":
+							unoroom.nextPlayer();
+							if(unoroom.gameState.activePlayers==2){
+								unoroom.gameState.nextAny = true;
+							}
+						break;
+					}
+
+					unoroom.nextPlayer();
+					unoroom.emitTurns();
 				}
 			}
-			newroom.playerHasCard = function(player, card){
-				var hand = newroom.gameState.playerhands[player];
+			unoroom.checkVictory = function(){
+				for(var i=0;i<unoroom.playersockets.length;i++){
+					if(unoroom.playersockets[i]!=null && unoroom.gameState.playerhands[i].length==0){
+						return [true, i];
+					}
+				}
+				return [false, false];
+			}
+			unoroom.nextPlayer = function(){
+				if(unoroom.gameState.direction==1){
+					unoroom.gameState.turn = (unoroom.gameState.turn + 1) % unoroom.numPlayers;
+				}else{
+					unoroom.gameState.turn-=1;
+					if(unoroom.gameState.turn==-1){
+						unoroom.gameState.turn = unoroom.numPlayers-1;
+					}
+				}
+				if(!unoroom.playersockets[unoroom.gameState.turn]){
+					unoroom.nextPlayer();
+				}
+			}
+			unoroom.callUno = function(playerNum){
+				var toEmit = Object();
+				toEmit.message = 'callUno';
+				toEmit.player = playerNum;
+				unoroom.emitToPlayers('gameMessage', JSON.stringify(toEmit));
+				var punish = true;
+				for(var i=0;i<unoroom.gameState.unoSafe.length;i++){
+					if(!unoroom.gameState.unoSafe[i]){
+						if(i==playerNum){
+							unoroom.gameState.unoSafe[i] = true;
+						}else{
+							unoroom.dealRandomCardsToPlayer(2, i, 500);
+							unoroom.gameState.unoSafe[i] = true;
+						}
+						punish = false;
+					}
+				}
+				if(punish){
+					unoroom.dealRandomCardsToPlayer(2, playerNum, 500);
+				}
+			}
+			unoroom.playerHasCard = function(player, card){
+				var hand = unoroom.gameState.playerhands[player];
 				for(var i=0;i<hand.length;i++){
 					if(card.value==hand[i].value && card.color==hand[i].color){
 						return true;
 					}
 				}
 				return false;
+			}
+			unoroom.isPlayable = function(card){
+				if(unoroom.gameState.nextAny){
+					return true;
+				}
+				if(card.color=="Wild"){
+					return true;
+				}
+				if(card.value==unoroom.gameState.activeCard.value || card.color==unoroom.gameState.activeCard.color){
+					return true;
+				}
+				return false;
+			}
+			unoroom.removeCardFromPlayer = function(player, card){
+				var hand = unoroom.gameState.playerhands[player];
+				for(var i=0;i<hand.length;i++){
+					if(card.value==hand[i].value && card.color==hand[i].color){
+						unoroom.gameState.playerhands[player].splice(i, 1);
+						break;
+					}
+				}
+				if(hand.length==1){
+					unoroom.gameState.unoSafe[player] = false;
+				}
 			}
 		break;
 	}
