@@ -131,25 +131,35 @@ gamerooms.createRoom = function(id, name, pw, type, numplayers, playersocket){
 			}
 			c4room.startGame = function(){
 				console.log("Room "+c4room.id+": Game was started");
-				c4room.emitToPlayers('gameMessage', 'gameStart');
+				var toEmit = Object();
+				toEmit.message = 'gameStart';
+				c4room.emitToPlayers('gameMessage', JSON.stringify(toEmit));
 				var u = c4room.playersockets[c4room.gameState.turn];
 				if(u!=null){
-					u.emit('gameMessage', 'yourTurn');
+					var toEmit2 = Object();
+					toEmit2.message = 'yourTurn';
+					u.emit('gameMessage', JSON.stringify(toEmit2));
 				}
 				u = c4room.playersockets[c4room.nextPlayer(c4room.gameState.turn)];
 				if(u!=null){
-					u.emit('gameMessage', 'opponentTurn');
+					var toEmit3 = Object();
+					toEmit3.message = 'opponentTurn'
+					u.emit('gameMessage', JSON.stringify(toEmit3));
 				}
 			}
 			c4room.nextTurn = function(){
 				c4room.gameState.turn = c4room.nextPlayer(c4room.gameState.turn);
 				var u = c4room.playersockets[c4room.gameState.turn];
 				if(u!=null){
-					u.emit('gameMessage', 'yourTurn');
+					var toEmit = Object();
+					toEmit.message = 'yourTurn';
+					u.emit('gameMessage', JSON.stringify(toEmit));
 				}
 				u = c4room.playersockets[c4room.nextPlayer(c4room.gameState.turn)];
 				if(u!=null){
-					u.emit('gameMessage', 'opponentTurn');
+					var toEmit2 = Object();
+					toEmit2.message = 'opponentTurn';
+					u.emit('gameMessage', JSON.stringify(toEmit2));
 				}
 			}
 			c4room.isEmpty = function(){
@@ -179,15 +189,19 @@ gamerooms.createRoom = function(id, name, pw, type, numplayers, playersocket){
 						move.user = c4room.gameState.turn;
 						move.row = row;
 						c4room.gameState.num_moves++;
-						c4room.emitToPlayers('makeMove',JSON.stringify(move));
+						var toEmit = Object();
+						toEmit.message = 'makeMove';
+						toEmit.move = move;
+						c4room.emitToPlayers('gameMessage',JSON.stringify(toEmit));
 						var userwon = c4room.checkVictory(c4room.gameState.boardState);
 						if(userwon){
 							c4room.gameState.status = "Done";
 							var toEmit = Object();
+							toEmit.message = 'victory';
 							toEmit.details = userwon;
 							toEmit.user = c4room.players[c4room.gameState.turn];
 							toEmit.id = c4room.id;
-							c4room.emitToPlayers('victory', JSON.stringify(toEmit));
+							c4room.emitToPlayers('gameMessage', JSON.stringify(toEmit));
 							console.log("Room "+c4room.id+": User "+clients.getNameFromSocket(userSocket)+" won after "+c4room.num_moves+" moves.");
 							gamerooms.broadcastAllRooms();
 						}else{
@@ -322,14 +336,20 @@ gamerooms.createRoom = function(id, name, pw, type, numplayers, playersocket){
 				c4room.emitToPlayers('gameReset', JSON.stringify(c4room.gameState));
 				if(start){
 					setTimeout(function(){
-						c4room.emitToPlayers('gameMessage', 'gameStart');
+						var toEmit = Object();
+						toEmit.message = 'gameStart';
+						c4room.emitToPlayers('gameMessage', JSON.stringify(toEmit));
 						var u = c4room.playersockets[c4room.gameState.turn];
 						if(u!=null){
-							u.emit('gameMessage', 'yourTurn');
+							var toEmit = Object();
+							toEmit.message = 'yourTurn';
+							u.emit('gameMessage', JSON.stringify(toEmit));
 						}
 						u = c4room.playersockets[c4room.nextPlayer(c4room.gameState.turn)];
 						if(u!=null){
-							u.emit('gameMessage', 'opponentTurn');
+							var toEmit2 = Object();
+							toEmit2.message = 'opponentTurn';
+							u.emit('gameMessage', JSON.stringify(toEmit2));
 						}
 					}, 1000);
 				}
@@ -373,7 +393,11 @@ gamerooms.createRoom = function(id, name, pw, type, numplayers, playersocket){
 					gamerooms.broadcastAllRooms();
 					//broadcast join to all users
 					var n = clients.getNameFromSocket(userSocket);
-					room.emitToPlayers('playerJoin', JSON.stringify([room.id, n]));
+					var toEmit = Object();
+					toEmit.message = 'playerJoin';
+					toEmit.id = room.id;
+					toEmit.player = n;
+					room.emitToPlayers('gameMessage', JSON.stringify(toEmit));
 					if(room.gameState.status=="Playing"){
 						room.startGame();
 					}
@@ -396,8 +420,9 @@ gamerooms.createRoom = function(id, name, pw, type, numplayers, playersocket){
 				if(c4room.gameState.status!="Done"){
 					c4room.gameState.status = "Waiting for Players";
 				}
-				
-				c4room.emitToPlayers('gameMessage', 'gameStop');
+				var toEmit = Object();
+				toEmit.message = 'gameStop';
+				c4room.emitToPlayers('gameMessage', JSON.stringify(toEmit));
 				c4room.players[i] = null;
 				c4room.playersockets[i] = null;
 				console.log("Room "+c4room.id+": User "+clients.getNameFromSocket(userSocket)+" left the room");
@@ -405,7 +430,11 @@ gamerooms.createRoom = function(id, name, pw, type, numplayers, playersocket){
 				if(c4room.isEmpty()){
 					gamerooms.deleteRoom(c4room.id);
 				}else{
-					c4room.emitToPlayers('playerLeave', JSON.stringify([c4room.id, n]));
+					var toEmit = Object();
+					toEmit.message = 'playerLeave';
+					toEmit.id = c4room.id;
+					toEmit.playerName = n;
+					c4room.emitToPlayers('gameMessage', JSON.stringify(toEmit));
 				}
 				gamerooms.broadcastAllRooms();
 			}
@@ -503,7 +532,12 @@ gamerooms.createRoom = function(id, name, pw, type, numplayers, playersocket){
 				gamerooms.broadcastAllRooms();
 				//broadcast join to all users
 				var n = clients.getNameFromSocket(userSocket);
-				unoroom.emitToPlayers('playerJoin', JSON.stringify([unoroom.id, n, unoroom.players.indexOf(n)]));
+				var toEmit = Object();
+				toEmit.message = 'playerJoin';
+				toEmit.id = unoroom.id;
+				toEmit.playerName = n;
+				toEmit.player = unoroom.players.indexOf(n);
+				unoroom.emitToPlayers('gameMessage', JSON.stringify(toEmit));
 
 				if(startgame){
 					unoroom.gameState.status = "Preparing to start";
@@ -526,7 +560,12 @@ gamerooms.createRoom = function(id, name, pw, type, numplayers, playersocket){
 				if(unoroom.isEmpty()){
 					gamerooms.deleteRoom(unoroom.id);
 				}else{
-					unoroom.emitToPlayers('playerLeave', JSON.stringify([unoroom.id, n, i]));
+					var toEmit = Object();
+					toEmit.message = 'playerLeave';
+					toEmit.id = unoroom.id;
+					toEmit.playerName = n;
+					toEmit.player = i;
+					unoroom.emitToPlayers('gameMessage', JSON.stringify(toEmit));
 					//if only one player left, player wins.
 					if(unoroom.gameState.status=="Playing"){
 						//dump cards to discard

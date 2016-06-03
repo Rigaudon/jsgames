@@ -400,6 +400,12 @@ UnoRoom.gameMessage = function(msg){
 				yell_uno.remove();
 			}, 1500);
 		break;
+		case 'playerJoin':
+			UnoRoom.playerJoin([r.id, r.playerName, r.player]);
+		break;
+		case 'playerLeave':
+			UnoRoom.playerLeave([r.id, r.playerName, r.player]);
+		break;
 	}
 }
 //Connect Four
@@ -541,7 +547,8 @@ ConnectFourRoom.resetRoom = function(msg){
 	}, 800);
 }
 ConnectFourRoom.gameMessage = function(msg){
-	switch(msg){
+	var r = JSON.parse(msg);
+	switch(r.message){
 		case "gameStart":
 			//add colors
 			console.log("Game started");
@@ -574,12 +581,23 @@ ConnectFourRoom.gameMessage = function(msg){
 			$("#c4me span").css('border-width', '0px');
 			//$("#c4hoveranim").hide();
 		break;
+		case "playerJoin":
+			ConnectFourRoom.playerJoin([r.id, r.player]);
+		break;
+		case "playerLeave":
+			ConnectFourRoom.playerLeave([r.id, r.playerName]);
+		break;
+		case "makeMove":
+			ConnectFourRoom.makeMove(r.move);
+		break;
+		case "victory":
+			ConnectFourRoom.victory(r);
+		break;
 	}	
 }
 //changeme
 ConnectFourRoom.colors = ["yellow", "blue"];
-ConnectFourRoom.makeMove = function(msg){
-	var received = JSON.parse(msg);
+ConnectFourRoom.makeMove = function(received){
 	//received.id, received.col, received.row, received.user (int 0 or 1)
 	if(received.id!=currRoom){
 		console.log("Error: received move for wrong game id");
@@ -840,28 +858,6 @@ socket.on('joinRoomFailure', function(msg){
 
 });
 
-//todo: move all these into their respective classes
-
-socket.on('playerJoin', function(msg){
-	var received = JSON.parse(msg);
-	console.log("User "+received[1]+" has joined room "+received[0]);
-	if(activeGame=="Connect Four"){
-		ConnectFourRoom.playerJoin(received);
-	}else if(activeGame=="Uno"){
-		UnoRoom.playerJoin(received);
-	}
-});
-
-socket.on('playerLeave', function(msg){
-	var received = JSON.parse(msg);
-	console.log("User "+received[1]+" has left room "+received[0]);
-	if(activeGame=="Connect Four"){
-		ConnectFourRoom.playerLeave(received);
-	}else if(activeGame=="Uno"){
-		UnoRoom.playerLeave(received);
-	}
-});
-
 socket.on('leaveStatus', function(code){
 	if(code==1){
 		console.log("Successfully left room.");
@@ -874,20 +870,6 @@ socket.on('gameMessage', function(msg){
 		ConnectFourRoom.gameMessage(msg);
 	}else if(activeGame=="Uno"){
 		UnoRoom.gameMessage(msg);
-	}
-});
-
-socket.on('makeMove', function(msg){
-	if(activeGame=="Connect Four"){
-		ConnectFourRoom.makeMove(msg);
-	}
-});
-
-socket.on('victory', function(msg){
-	var received = JSON.parse(msg);
-	console.log(received.user+" won!");
-	if(activeGame=="Connect Four"){
-		ConnectFourRoom.victory(received);
 	}
 });
 
@@ -1046,7 +1028,6 @@ $("#create_room_button2").click(function(){
 				makeRoomStatus = true;
 				$("#create_room_button2").hide();
 				$("#loading").show();
-				//TODO: game room players should show players' colors
 			}else{
 				error = "Please select a game/players.";
 			}
