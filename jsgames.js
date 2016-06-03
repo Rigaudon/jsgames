@@ -23,86 +23,276 @@ currentMousePos.y = 0;
 //Game Room code
 //Uno
 var UnoRoom = Object();
+UnoRoom.selectedCard = null;
+UnoRoom.myTurn = false;
 UnoRoom.joinedRoom = function(){
-	$("#gameroombox").animate({
-		left: '-50%'
-	}, 500);
+	$("#gameroombox").css('left', '-50%');
 	$("#create_room_button").hide();
 	$("#back_to_lobby").show();
-	$("#active_game_div").animate({
-		left: '42.5%'
-	}, 500);
-	$("#room_info").animate({
-		top: '84%'
-	}, 500);
-	$("#game_messages").animate({
-		top: '84%'
-	}, 500);
+	$("#active_game_div").css('left', '42.5%');
+	$("#room_info").css('top', '85%');
+	$("#game_messages").css('top','85%');
 	getRoomInfo(currRoom);
 	activeGame = "Uno";
 }
-UnoRoom.buildRoom = function(gameState){
+UnoRoom.buildRoom = function(room){
 	var active = $("#active_game_div");
 	active.empty();
+	var row1 = $("<div class='row uno_top_row'>");
+	var divlen = 100/(room.players.length-1);
+	for(var i=0;i<room.players.length;i++){
+		var d = $("<div style='width:"+Math.floor(divlen)+"%;height:100%;float:left'>");
+		var txt = room.players[i];
+		var color = 'white';
+		if(txt==usrname){
+			continue;
+		}
+		if(!room.players[i]){
+			txt = "Waiting...";
+			d.append($("<div class='row uno_op_name'>").append($("<span style='color:"+color+"'>").text(txt)));	
+			d.append($("<div class='row uno_op_hand hand0'>"));
+		}else{
+			color = onlineUsers[1][onlineUsers[0].indexOf(txt)];
+			var colorspan = $("<span style='color:"+color+"'>").text(txt);
+			var divrow = $("<div class='row uno_op_name' id='uno_op_"+i+"'>").append(colorspan);
+			d.append(divrow);	
+			d.append($("<div class='row uno_op_hand hand0' id='uno_op_hand_"+i+"'>"));
+		}
+		row1.append(d);
+	}
+	active.append(row1);
+	var row2 = $("<div class='row uno_main_row'>");
+	var padrow = $("<div class='row uno_pad_row'>");
+	var padrow2 = $("<div class='row uno_pad_row'>");
+	var cardrow = $("<div class='row uno_card_row'>");
+	
+	var deckimg = $("<img id='uno_deck' src='res/uno/deck.png'>");
+	deckimg.hover(function(){
+		deckimg.attr('src', 'res/uno/deckdraw.png');
+	}, function(){
+		deckimg.attr('src', 'res/uno/deck.png');
+	});
+	cardrow.append(deckimg);
+
+	var discardimg = $("<img id='uno_discard' src='res/uno/blank.png'>");
+	cardrow.append(discardimg);
+
+	var unobtn = $("<a href='#' class='btn-big' id='uno_btn'>UNO</a>");
+	cardrow.append(unobtn);
+	
+	var handrow = $("<div class='row uno_hand_row'>");
+	row2.append(padrow);
+	row2.append(cardrow);
+	row2.append(padrow2);
+	row2.append(handrow);
+	active.append(row2);
+	$(".uno_hand_row").sortable();
+	$("#uno_discard").droppable({
+		over: function(event, ui){
+			$(this).css('height', '100%');
+		},
+		out: function(event, ui){
+			$(this).css('height', '90%');
+		},
+		drop: function(event, ui){
+			$(this).css('height', '90%');
+			if(!UnoRoom.myTurn){
+				return false;
+			}
+			if(UnoRoom.selectedCard){
+				if(UnoRoom.selectedCard.color=="Wild"){
+					$("#uno_wild_picker .panel-body").empty();
+					$("#uno_wild_picker").show();
+					var draw4 = "";
+					if(UnoRoom.selectedCard.value=="Draw 4"){
+						draw4 = "draw4";
+					}
+					var red = $("<img src='res/uno/wild"+draw4+"red.png' class='uno_picker_card'>");
+					red.click(function(){ 
+						UnoRoom.selectedCard.selectedColor = "Red";
+					});
+					var yellow = $("<img src='res/uno/wild"+draw4+"yellow.png' class='uno_picker_card'>");
+					yellow.click(function(){ 
+						UnoRoom.selectedCard.selectedColor = "Yellow"; 
+					});
+					var green = $("<img src='res/uno/wild"+draw4+"green.png' class='uno_picker_card'>");
+					green.click(function(){ 
+						UnoRoom.selectedCard.selectedColor = "Green"; 
+					});
+					var blue = $("<img src='res/uno/wild"+draw4+"blue.png' class='uno_picker_card'>");
+					blue.click(function(){ 
+						UnoRoom.selectedCard.selectedColor = "Blue"; 
+					});
+					$("#uno_wild_picker .panel-body").append(red);
+					$("#uno_wild_picker .panel-body").append(yellow);
+					$("#uno_wild_picker .panel-body").append(green);
+					$("#uno_wild_picker .panel-body").append(blue);
+					$(".uno_picker_card").click(function(){
+						$("#uno_wild_picker a.close_btn").click();
+						var toEmit = Object();
+						toEmit.id = currRoom;
+						toEmit.card = Object();
+						toEmit.card.color = UnoRoom.selectedCard.color;
+						toEmit.card.value = UnoRoom.selectedCard.value;
+						toEmit.card.selectedColor = UnoRoom.selectedCard.selectedColor;
+						socket.emit('makeMove', JSON.stringify(toEmit));
+					});
+
+				}else{
+					var toEmit = Object();
+					toEmit.id = currRoom;
+					toEmit.card = Object();
+					toEmit.card.color = UnoRoom.selectedCard.color;
+					toEmit.card.value = UnoRoom.selectedCard.value;
+					socket.emit('makeMove', JSON.stringify(toEmit));
+				}
+			}
+		}
+	});
+
+	var uno_wild_picker = $("<div class='box panel panel-default' id='uno_wild_picker'>");
+	var close_btn = $('<a href="#" class="close_btn btn btn-default glyphicon glyphicon-remove">');
+	close_btn.click(function(){
+		$("#uno_wild_picker").hide();
+	});
+	uno_wild_picker.append(close_btn);
+	uno_wild_picker.append($("<div class='panel-heading'>").text('Choose one'));
+	uno_wild_picker.append($("<div class='panel-body'>"));
+	active.append(uno_wild_picker);
 }
 UnoRoom.leaveRoom = function(){
-	$("#active_game_div").animate({
-		left: '150%'
-	});
+	$("#active_game_div").css('left', '150%');
 	$("#back_to_lobby").hide();
 	$("#create_room_button").show();
-	$("#gameroombox").animate({
-		left: '42.5%'
-	}, 500);
-	$("#room_info").animate({
-		top: '105%'
-	}, 500);
-	$("#game_messages").animate({
-		top: '105%'
-	}, 500);
+	$("#gameroombox").css('left', '42.5%');
+	$("#room_info").css('top', '105%');
+	$("#game_messages").css('top', '105%');
 	$("#game_messages").empty();
 	socket.emit('leaveRoom', currRoom);
 	activeGame = null;
 	currRoom = null;
 	playernum = null;
 }
+UnoRoom.playerJoin = function(received){
+	if(currRoom==received[0] && received[1]!=usrname){
+		var added = false;
+		$(".uno_op_name").each(function(index){
+			if(!this.id && !added){
+				this.id = "uno_op_"+received[2];
+				var color = onlineUsers[1][onlineUsers[0].indexOf(received[1])];
+				$(this).empty();
+				$(this).append($("<span style='color:"+color+"'>").text(received[1]));
+				$(this).next().attr('id', 'uno_op_hand_'+received[2]);
+				added = true;
+			}
+		});
+
+	 	getRoomInfo(currRoom);
+
+	 }
+}
+UnoRoom.playerLeave = function(received){
+	if(currRoom==received[0]){
+		var target = $("#uno_op_"+received[2]);
+		target.empty();
+		target.text("Waiting...");
+		target.removeAttr('id');
+		target.next().removeAttr('id');
+	}
+}
+UnoRoom.gameMessage = function(msg){
+	var r = JSON.parse(msg);
+	switch(r.message){
+		case 'gameStart':
+			getRoomInfo(currRoom);
+		break;
+		case 'idraw':
+			var orig = $("#uno_deck").position();
+			var h = $("#uno_deck").height();
+			//this assumes 20px margins;;
+			var animimg= $("<img class='transition-fast' src='res/uno/"+r.color.toLowerCase()+r.value.toLowerCase().replace(" ", '')+".png' style='position:absolute;top:"+orig.top+"px;left:+"+(orig.left+20)+"px' height='"+h+"px'>");
+			$("#active_game_div").append(animimg);
+			animimg.css('left', $(".uno_hand_row").position().left+"px");
+			animimg.css('top', $(".uno_hand_row").position().top+"px");
+			animimg.css('height', $(".uno_hand_row").height()/2+"px");
+			setTimeout(function(){
+				animimg.remove(); 
+				var staticimg = $("<img src='res/uno/"+r.color.toLowerCase()+r.value.toLowerCase().replace(" ", '')+".png'>");
+				staticimg.mousedown(function(){
+					UnoRoom.selectedCard = Object();
+					UnoRoom.selectedCard.value = r.value;
+					UnoRoom.selectedCard.color = r.color;
+					UnoRoom.selectedCard.dom = staticimg;
+				});
+				$(".uno_hand_row").prepend(staticimg);
+			}, 300);		
+		break;
+		case 'playerdraw':
+			var orig = $("#uno_deck").position();
+			var h = $("#uno_deck").height();
+			//this assumes 20px margins;;
+			var animimg= $("<img class='dropdiv' src='res/uno/cardback.png' style='position:absolute;top:"+orig.top+"px;left:+"+(orig.left+20)+"px' height='"+h+"px'>");
+			$("#active_game_div").append(animimg);
+			animimg.css('left', ($("#uno_op_"+r.player).position().left+$("#uno_op_"+r.player).width()/2)+"px");
+			animimg.css('top', $("#uno_op_"+r.player).position().top+"px");
+			animimg.css('height', $(".uno_hand_row").height()/2+"px");
+			setTimeout(function(){
+				animimg.remove();
+				for(var k=0;k<8;k++){
+					if($("#uno_op_hand_"+r.player).hasClass('hand'+k)){
+						$("#uno_op_hand_"+r.player).removeClass('hand'+k);
+						$("#uno_op_hand_"+r.player).addClass('hand'+(k+1));
+						break;
+					}
+				}
+			}, 800);
+		break;
+		case 'firstCard':
+			var orig = $("#uno_deck").position();
+			var h = $("#uno_deck").height();
+			//this assumes 20px margins;;
+			var imgname = r.card.color.toLowerCase() + r.card.value.replace(" ", "").toLowerCase();
+			var animimg= $("<img class='dropdiv' src='res/uno/"+imgname+".png' style='position:absolute;top:"+orig.top+"px;left:+"+(orig.left+20)+"px' height='"+h+"px'>");
+			$("#active_game_div").append(animimg);
+			//also assumes 20px margins
+			animimg.css('left', $("#uno_discard").position().left+20);
+			setTimeout(function(){
+				animimg.remove();
+				$("#uno_discard").attr('src', 'res/uno/'+imgname+'.png');
+			}, 800);
+		break;
+		case 'yourTurn':
+			UnoRoom.myTurn = true;
+			$(".uno_active").removeClass("uno_active");
+			$(".uno_hand_row").addClass("uno_active");
+		break;
+		case 'opponentTurn':
+			UnoRoom.myTurn = false;
+			$(".uno_active").removeClass("uno_active");
+			$("#uno_op_"+r.player).addClass("uno_active");
+		break;
+	}
+}
 //Connect Four
 var ConnectFourRoom = Object();
 ConnectFourRoom.joinedRoom = function(){
-	$("#gameroombox").animate({
-		left: '-50%'
-	}, 500);
+	$("#gameroombox").css('left', '-50%');
 	ConnectFourRoom.resize();
 	$("#create_room_button").hide();
 	$("#back_to_lobby").show();
-	$("#active_game_div").animate({
-		left: '42.5%'
-	}, 500);
+	$("#active_game_div").css('left', '42.5%');
 	getRoomInfo(currRoom);
-	$("#room_info").animate({
-		top: '84%'
-	}, 500);
-	$("#game_messages").animate({
-		top: '84%'
-	}, 500);
+	$("#room_info").css('top', '85%');
+	$("#game_messages").css('top', '85%');
 	activeGame = "Connect Four";
 }
 ConnectFourRoom.leaveRoom = function(){
-	$("#active_game_div").animate({
-		left: '150%'
-	});
-	//empty the div?
+	$("#active_game_div").css('left', '150%');
 	$("#back_to_lobby").hide();
 	$("#create_room_button").show();
-	$("#gameroombox").animate({
-		left: '42.5%'
-	}, 500);
-	$("#room_info").animate({
-		top: '105%'
-	}, 500);
-	$("#game_messages").animate({
-		top: '105%'
-	}, 500);
+	$("#gameroombox").css('left', '42.5%');
+	$("#room_info").css('top', '105%');
+	$("#game_messages").css('top', '105%');
 	$("#game_messages").empty();
 	socket.emit('leaveRoom', currRoom);
 	activeGame = null;
@@ -129,7 +319,6 @@ ConnectFourRoom.buildRoom = function(gameState){
 	active.empty();
 	var toptxt = "Waiting for opponent...";
 	var bottomtxt = "Me";
-	//todo: colors
 	if(gameState.player1!=null && gameState.player2!=null){
 		if(gameState.player1==usrname){
 			toptxt = gameState.player2;
@@ -202,7 +391,7 @@ ConnectFourRoom.resetRoom = function(msg){
 	$("#game_messages").empty();
 	$(".c4box").each(function(index){
 		if($(this).hasClass("c4"+ConnectFourRoom.colors[0])||$(this).hasClass("c4"+ConnectFourRoom.colors[1])){
-			var dropdiv = $("<div>");
+			var dropdiv = $("<div class='dropdiv'>");
 			dropdiv.css('position', 'absolute');
 			dropdiv.css('background-image', $(this).css('background-image'));
 			dropdiv.css('height', $(this).css('height'));
@@ -213,10 +402,8 @@ ConnectFourRoom.resetRoom = function(msg){
 			$("#active_game_div").append(dropdiv);
 			$(this).css('background-image', 'none');
 			var dropto = $("#connect_four_board").position().top = $("#connect_four_board").height();
-			dropdiv.animate({
-				top: dropto+'px',
-				opacity: '0'
-			}, 800);
+			dropdiv.css('top', dropto+'px');
+			dropdiv.css('opacity', '0');
 		}
 	});
 	setTimeout(function(){
@@ -249,12 +436,12 @@ ConnectFourRoom.gameMessage = function(msg){
 		break;
 		case "yourTurn":
 			$("#c4me span").css('border', '20px outset white');
-			$("#c4opponent span").css('border', 'none');
+			$("#c4opponent span").css('border-width', '0px');
 			$("#c4hoveranim").show();
 		break;
 		case "opponentTurn":
 			$("#c4opponent span").css('border', '20px outset white');
-			$("#c4me span").css('border', 'none');
+			$("#c4me span").css('border-width', '0px');
 			//$("#c4hoveranim").hide();
 		break;
 	}	
@@ -356,30 +543,11 @@ function getPlayerNum(roomid){
 socket.on('login status', function(status){
 	if(status==1){
 		//Success!
-		//Name select goes away
-		$("#name_select").animate({
-			left: '-100%'
-		}, 500);
-
-		//Chat box comes in
-		$("#chatmain").animate({
-			left: '105%'
-		}, 500);
-
-		//Game roomes come in
-		$("#gameroombox").animate({
-			left: '42.5%'
-		}, 500);
-
-		//Create room/join number comes in
-		$("#creategamebox").animate({
-			left: '47.25%'
-		}, 500);
-
-		//Who's online comes in
-		$("#onlinebox").animate({
-			left: '25%'
-		}, 500);
+		$("#name_select").css('left', '-100%');
+		$("#chatmain").css('left', '105%');
+		$("#gameroombox").css('left', '42.5%');
+		$("#creategamebox").css('left', '47.25%');
+		$("#onlinebox").css('left', '25%');
 
 		//Set chatbox username
 		$("#chatname").text(usrname+":");
@@ -397,9 +565,7 @@ socket.on('login status', function(status){
 		Cookies.set('name', usrname, {expires: 7});
 		//settings top left
 		$("#settings_btn").show();
-		$("#settings_btn").animate({
-			left: '0%'
-		}, 500);
+		$("#settings_btn").css('left', '0%');
 	}else if(status==0){
 		//already taken
 		usrname = false;
@@ -533,7 +699,7 @@ socket.on('joinRoomSuccess', function(room){
 		ConnectFourRoom.joinedRoom();
 		break;
 		case "Uno":
-		UnoRoom.buildRoom(r.gameState);
+		UnoRoom.buildRoom(r);
 		UnoRoom.joinedRoom();
 		break;
 	}
@@ -544,11 +710,15 @@ socket.on('joinRoomFailure', function(msg){
 
 });
 
+//todo: move all these into their respective classes
+
 socket.on('playerJoin', function(msg){
 	var received = JSON.parse(msg);
 	console.log("User "+received[1]+" has joined room "+received[0]);
 	if(activeGame=="Connect Four"){
 		ConnectFourRoom.playerJoin(received);
+	}else if(activeGame=="Uno"){
+		UnoRoom.playerJoin(received);
 	}
 });
 
@@ -557,6 +727,8 @@ socket.on('playerLeave', function(msg){
 	console.log("User "+received[1]+" has left room "+received[0]);
 	if(activeGame=="Connect Four"){
 		ConnectFourRoom.playerLeave(received);
+	}else if(activeGame=="Uno"){
+		UnoRoom.playerLeave(received);
 	}
 });
 
@@ -570,6 +742,8 @@ socket.on('leaveStatus', function(code){
 socket.on('gameMessage', function(msg){
 	if(activeGame=="Connect Four"){
 		ConnectFourRoom.gameMessage(msg);
+	}else if(activeGame=="Uno"){
+		UnoRoom.gameMessage(msg);
 	}
 });
 
@@ -683,43 +857,37 @@ $("#chatbox_main_msg").bind('keypress', function(e){
 		this.value="";
 	}
 });
-
+//todo: move these into builder
 //bring up creating room screen
 $("#create_room_button").click(function(){
 	$("#dim_div").css('left', '25%');
-	$("#dim_div").css('background-color','rgba(0,0,0,0.9)')
-	$("#create_room_box").animate({
-		left: '31%'
-	}, 500);
+	$("#dim_div").css('background-color','rgba(0,0,0,0.9)');
+	$("#create_room_box").css('left', '31%');
 });
 
 //bring up settings screen
 $("#settings_btn a").click(function(){
 	$("#dim_div").css('left', '25%');
-	$("#dim_div").css('background-color','rgba(0,0,0,0.9)')
-	$("#settings_box").animate({
-		left: '31%'
-	}, 500);
+	$("#dim_div").css('background-color','rgba(0,0,0,0.9)');
+	$("#settings_box").css('left', '31%');
 });
 
 //close creating room screen
 $("#close_btn").click(function(){
-	$("#create_room_box").animate({
-		left: '125%'
-	}, 500, function(){
+	$("#create_room_box").css('left', '125%');
+	setTimeout(function(){
 		$("#dim_div").css('left', '125%');
-		$("#dim_div").css('background-color','rgba(0,0,0,0)')
-	});
+		$("#dim_div").css('background-color','rgba(0,0,0,0)');
+	}, 500);
 });
 
 //close settings screen
 $("#close_btn2").click(function(){
-	$("#settings_box").animate({
-		left: '125%'
-	}, 500, function(){
+	$("#settings_box").css('left', '125%');
+	setTimeout(function(){
 		$("#dim_div").css('left', '125%');
 		$("#dim_div").css('background-color','rgba(0,0,0,0)')
-	});
+	}, 500);
 });
 
 //Send create room message to server
@@ -782,7 +950,7 @@ function validChars(str){
 var game_players = {};
 game_players["Connect Four"] = [2];
 game_players["Chess"] = [2];
-game_players["Uno"] = [2,3,4,5,6,7,8,9,10];
+game_players["Uno"] = [2,3,4,5,6];
 game_players["Checkers"] = [2];
 $("#create_game_type").change(function(){
 	var possible = game_players[$("#create_game_type").val()];

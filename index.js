@@ -6,7 +6,7 @@ var io = require('socket.io')(http);
 var validGames = ["Connect Four", "Uno"];
 var validPlayers = {};
 validPlayers["Connect Four"] = ["2"];
-validPlayers["Uno"] = ["2", "3", "4", "5", "6", "7", "8", "9", "10"];
+validPlayers["Uno"] = ["2", "3", "4", "5", "6"];
 var clients = Object();
 clients.sockets = {};
 clients.colors = {};
@@ -118,6 +118,7 @@ gamerooms.createRoom = function(id, name, pw, type, numplayers, playersocket){
 	switch(type){
 		//Includes: startGame(), nextPlayer(curr), nextTurn(), isEmpty(), makeMove(userSocket, move), checkVictory(board), reset(), playerJoin(userSocket)
 		case "Connect Four":
+
 			newroom.gameState.player1 = null;
 			newroom.gameState.player2 = null;
 			newroom.gameState.turn = 0;
@@ -497,12 +498,13 @@ gamerooms.createRoom = function(id, name, pw, type, numplayers, playersocket){
 				gamerooms.broadcastAllRooms();
 				//broadcast join to all users
 				var n = clients.getNameFromSocket(userSocket);
-				newroom.emitToPlayers('playerJoin', JSON.stringify([newroom.id, n]));
+				newroom.emitToPlayers('playerJoin', JSON.stringify([newroom.id, n, newroom.players.indexOf(n)]));
 
 				if(startgame){
-					newroom.gameState.status = "Playing";
-					newroom.resetDeck();
-					newroom.startNewGame();
+					newroom.gameState.status = "Preparing to start";
+					setTimeout(function(){
+						newroom.startNewGame();
+					}, 1000);
 				}
 				return true;
 			}
@@ -511,7 +513,6 @@ gamerooms.createRoom = function(id, name, pw, type, numplayers, playersocket){
 				var i = newroom.playersockets.indexOf(userSocket);
 				var n = clients.getNameFromSocket(userSocket);
 				
-				newroom.emitToPlayers('gameMessage', 'gameStop');
 				newroom.players[i] = null;
 				newroom.playersockets[i] = null;
 				console.log("Room "+newroom.id+": User "+clients.getNameFromSocket(userSocket)+" left the room");
@@ -519,26 +520,109 @@ gamerooms.createRoom = function(id, name, pw, type, numplayers, playersocket){
 				if(newroom.isEmpty()){
 					gamerooms.deleteRoom(newroom.id);
 				}else{
-					newroom.emitToPlayers('playerLeave', JSON.stringify([newroom.id, n]));
+					newroom.emitToPlayers('playerLeave', JSON.stringify([newroom.id, n, i]));
+					//if only one player left, player wins.
 				}
 				gamerooms.broadcastAllRooms();
 			}
 			newroom.startNewGame = function(){
+				newroom.resetDeck();
+				newroom.gameState.discard = [];
+				newroom.gameState.activeCard = null;
+				newroom.gameState.status = "Dealing";
+				var toEmit = {};
+				toEmit['message'] = 'gameStart';
+				newroom.emitToPlayers('gameMessage', JSON.stringify(toEmit));
 				newroom.gameState.playerhands = [];
+				newroom.gameState.turn = 0;
+				newroom.gameState.direction = 1;
+				var delay = 500;
 				for(var l=0;l<newroom.playersockets.length;l++){
 					newroom.gameState.playerhands[l] = [];
-					newroom.dealRandomCardsToPlayer(7, l);
+					newroom.dealRandomCardsToPlayer(7, l, delay);
+				}
+				newroom.gameState.status = "Playing";
+				//find starting card
+				setTimeout(function(){
+					var i = Math.floor(Math.random()*newroom.gameState.deck.length);
+					var card = newroom.gameState.deck[i];
+					var nums = ["0","1","2","3","4","5","6","7","8","9"];
+					//for convenience, starting card has to be number
+					while(nums.indexOf(card.value)==-1){
+						i = Math.floor(Math.random()*newroom.gameState.deck.length);
+						card = newroom.gameState.deck[i];
+					}
+					newroom.gameState.activeCard = card;
+					newroom.gameState.deck.splice(i, 1);
+					newroom.gameState.discard.push(card);
+					var toEmit = Object();
+					toEmit.message = 'firstCard';
+					toEmit.card = card;
+					newroom.emitToPlayers('gameMessage', JSON.stringify(toEmit));
+					newroom.emitTurns();
+				}, delay*8);
+			}
+
+			newroom.emitTurns = function(){
+				for(var j=0;j<newroom.playersockets.length;j++){
+					var toEmit = Object();
+					if(j==newroom.gameState.turn){
+						toEmit.message = 'yourTurn';
+					}else{
+						toEmit.message = 'opponentTurn';
+						toEmit.player = newroom.gameState.turn;
+					}
+					newroom.playersockets[j].emit('gameMessage', JSON.stringify(toEmit));
 				}
 			}
-			newroom.dealRandomCardsToPlayer = function(numCards, playerNum){
-				for(var j=0;j<numCards;j++){
+			newroom.dealRandomCardsToPlayer = function(numCards, playerNum, delay){
+				if(numCards>0){
 					var i = Math.floor(Math.random()*newroom.gameState.deck.length);
 					var card = newroom.gameState.deck[i];
 					newroom.gameState.playerhands[playerNum].push(card);
 					newroom.gameState.deck.splice(i, 1);
+					for(var k=0;k<newroom.playersockets.length;k++){
+						if(k==playerNum){
+							//emit the card
+							var toEmit = Object();
+							toEmit.message = 'idraw';
+							toEmit.color = card.color;
+							toEmit.value = card.value;
+							newroom.playersockets[k].emit('gameMessage', JSON.stringify(toEmit));
+						}else{
+							//emit that the player drew a card
+							var toEmit = Object();
+							toEmit.message = 'playerdraw';
+							toEmit.player = playerNum;
+							newroom.playersockets[k].emit('gameMessage', JSON.stringify(toEmit));
+						}
+					}
+					setTimeout(function(){
+						newroom.dealRandomCardsToPlayer(numCards-1, playerNum, delay);
+					}, delay);
 				}
 			}
-
+			newroom.makeMove = function(userSocket, received){
+				if(received.id!=newroom.id){
+					return false;
+				}
+				var i = newroom.playersockets.indexOf(userSocket);
+				if(i!=newroom.gameState.turn){
+					return false;
+				}
+				if(!newroom.playerHasCard(i, received.card)){
+					return false;
+				}
+			}
+			newroom.playerHasCard = function(player, card){
+				var hand = newroom.gameState.playerhands[player];
+				for(var i=0;i<hand.length;i++){
+					if(card.value==hand[i].value && card.color==hand[i].color){
+						return true;
+					}
+				}
+				return false;
+			}
 		break;
 	}
 	
