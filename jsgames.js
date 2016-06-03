@@ -17,8 +17,7 @@ var activeGame = null;
 var currRoom = null;
 var onlineUsers = null;
 var playernum = null;
-
-//Game Room code
+var emotesEnabled = true;
 
 function preloadImages(imgarr){
 	for (var i = 0; i < imgarr.length; i++) {
@@ -26,6 +25,14 @@ function preloadImages(imgarr){
 	}
 }
 
+//Lobby Code
+var Lobby = Object();
+Lobby.build = function(){
+	
+}
+
+
+//Game Room code
 //Uno
 var UnoRoom = Object();
 UnoRoom.selectedCard = null;
@@ -525,6 +532,8 @@ ConnectFourRoom.playerLeave = function(received){
 }
 ConnectFourRoom.resetRoom = function(msg){
 	$("#game_messages").empty();
+	getPlayerNum(currRoom);
+	getRoomInfo(currRoom);
 	$(".c4box").each(function(index){
 		if($(this).hasClass("c4"+ConnectFourRoom.colors[0])||$(this).hasClass("c4"+ConnectFourRoom.colors[1])){
 			var dropdiv = $("<div class='dropdiv'>");
@@ -543,7 +552,7 @@ ConnectFourRoom.resetRoom = function(msg){
 		}
 	});
 	setTimeout(function(){
-		ConnectFourRoom.buildRoom(msg);
+		ConnectFourRoom.buildRoom(msg.gameState);
 	}, 800);
 }
 ConnectFourRoom.gameMessage = function(msg){
@@ -592,6 +601,9 @@ ConnectFourRoom.gameMessage = function(msg){
 		break;
 		case "victory":
 			ConnectFourRoom.victory(r);
+		break;
+		case "gameReset":
+			ConnectFourRoom.resetRoom(r);
 		break;
 	}	
 }
@@ -743,7 +755,9 @@ socket.on('message2c', function(msg){
 	var adiv = $("<div>");
 	var aspan = $("<span style='color:"+received.color+";font-weight:bold'>").text(received.user+": ");
 	adiv.append(aspan);
-	var ali = $('<span>').text(received.content);
+	var ali = $('<span>');
+	ali.text(received.content);
+	processChatMessage(ali);
 	adiv.append(ali);
 
 	msgbox.append(adiv);
@@ -878,15 +892,6 @@ socket.on('playerNum', function(msg){
 	playernum = msg;
 });
 
-socket.on('gameReset', function(msg){
-	console.log("Game was reset");
-	getPlayerNum(currRoom);
-	getRoomInfo(currRoom);
-	if(activeGame=="Connect Four"){
-		ConnectFourRoom.resetRoom(JSON.parse(msg));
-	}
-});
-
 //getting room info for the box
 socket.on('roomInfo', function(room){
 	console.log("Received room information");
@@ -952,6 +957,16 @@ function removeRoom(roomId){
 	}
 }
 
+function processChatMessage(jqelem){
+	var txt = jqelem.text();
+	if(emotesEnabled && typeof emoteList != "undefined"){
+		var path = "res/emotes/";
+		for(var i=0;i<emoteList.length;i++){
+			txt = txt.replace(new RegExp(emoteList[i], "g"), "<img title='"+emoteList[i]+"' src='"+path+emoteList[i]+".png' />");
+		}
+		jqelem.html(txt);
+	}
+}
 
 //Client JS Code
 
@@ -1109,4 +1124,5 @@ $(document).ready(function(){
 	if(Cookies.get('name')!=undefined){
 		$("#input_name").val(Cookies.get('name'));
 	}
+	preloadImages(emoteimglist);
 });

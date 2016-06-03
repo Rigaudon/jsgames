@@ -333,7 +333,10 @@ gamerooms.createRoom = function(id, name, pw, type, numplayers, playersocket){
 				c4room.gameState.turn = 0;
 				c4room.gameState.num_moves = 0;
 				c4room.gameState.boardState = [[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0]];
-				c4room.emitToPlayers('gameReset', JSON.stringify(c4room.gameState));
+				var toEmit = Object();
+				toEmit.message = 'gameReset';
+				toEmit.gameState = c4room.gameState;
+				c4room.emitToPlayers('gameMessage', JSON.stringify(toEmit));
 				if(start){
 					setTimeout(function(){
 						var toEmit = Object();
