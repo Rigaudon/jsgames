@@ -970,6 +970,7 @@ io.on('connection', function(socket){
   	//set the user's color
   	socket.on('choosecolor', function(col){
   		clients.setColor(clients.getNameFromSocket(socket), col);
+  		clients.broadcastOnlineUsers();
   	});
 
   	socket.on('joinchatroom', function(room){

@@ -10,6 +10,8 @@
 	<script src="bootstrap-select-1.10.0/dist/js/bootstrap-select.min.js"></script>
 	<script src="js.cookie.js"></script>
 	<script src="jquery-ui-1.11.4/jquery-ui.min.js"></script>
+	<link rel="stylesheet" href="bootstrap-switch.min.css">
+	<script src="bootstrap-switch.min.js"></script>
 	<link rel="stylesheet" href="main.css">
 	<script src="imglist.js"></script>
 	<script src="emotelist.js"></script>
@@ -21,7 +23,6 @@
 			<input type="text" maxlength="12" id="input_name" />
 			<div id="name_select_msg" class="msg alert"></div>
 		</div>
-
 		<div id="chatmain" class="box">
 			<div class="panel panel-default">
 				<div class="panel-heading">Chat</div>
@@ -34,7 +35,6 @@
 				</div>
 			</div>
 		</div>
-
 		<div id="gameroombox" class="box contentbox">
 			Game rooms
 			<div class="table-responsive">
@@ -53,15 +53,13 @@
 				</table>
 			</div>
 		</div>
-
 		<div id="creategamebox" class="box">
 
-			<a class="btn-big btn-big-green" href="#" role="button" id="create_room_button">Create a Room</a>
+			<a class="btn-big btn-big-green" href="#" role="button" id="create_room_button" data-toggle="modal" data-target="#gameModal">Create a Room</a>
 			<a class="btn btn-default" href="#" role="button" id="back_to_lobby">
 				<span class="glyphicon glyphicon-home" aria-hidden="true"></span> Back to Lobby
 			</a>
 		</div>
-
 		<div class="box" id="onlinebox">
 			<div class="panel panel-default">
 				<div class="panel-heading">
@@ -73,9 +71,7 @@
 				</div>
 			</div>
 		</div>
-
 		<div id="active_game_div" class="box">
-
 		</div>
 		<div id="room_info" class="box">
 			<div class="panel panel-default">
@@ -93,65 +89,77 @@
 				</div>
 			</div>
 		</div>
-		
 		<div id="game_messages" class="box"></div>
-		<div id="settings_btn"><a class="btn btn-default" href="#"><span class="glyphicon glyphicon-cog" aria-hidden="true"></span></a></div>
+		<div id="settings_btn"><a class="btn btn-default" href="#" data-toggle="modal" data-target="#settingsModal"><span class="glyphicon glyphicon-cog" aria-hidden="true"></span></a></div>
 
-		<div class="box" id="dim_div"></div>
-		<div id="create_room_box" class="box">
-			<a href="#" id="close_btn" class="btn btn-default glyphicon glyphicon-remove"></a>
-			<div class="panel panel-default" id="create_room_panel">
-				<div class="panel-heading" id="create_heading">Create a Room</div>
-				<div class="panel-body">
-					<div class="row"><!--Placeholder--></div>
-					<div class="row">
-						<div class="input-group input-group-lg">
-							<span class="input-group-addon">Room Name</span>
-							<input type="text" class="form-control" placeholder="Required" aria-describedby="basic-addon1" id="create_room_name" maxlength="20">
-						</div>
+		<div id="gameModal" class="modal fade">
+			<div class="modal-dialog">
+				<div class="modal-content">
+					<div class="modal-header">
+						<button type="button" class="close" data-dismiss="modal">&times;</button>
+						<h4 class="modal-title">Create a Room</h4>
 					</div>
-					<div class="row">
-						<div class="input-group input-group-lg">
-							<span class="input-group-addon glyphicon glyphicon-lock"></span>
-							<input type="password" class="form-control" placeholder="Optional" aria-describedby="basic-addon1" id="create_room_pw" maxlength="20">
+					<div class="modal-body">
+						<div class="row">
+							<div class="input-group input-group-lg">
+								<span class="input-group-addon">Room Name</span>
+								<input type="text" class="form-control" placeholder="Required" aria-describedby="basic-addon1" id="create_room_name" maxlength="20">
+							</div>
 						</div>
-					</div>
-					<div class="row">
-						<div class="col-md-6 col-min-padding">
-							<select class="selectpicker form-control col-lg-12" title="Choose a Game" id="create_game_type">
+						<div class="row">
+							<div class="input-group input-group-lg">
+								<span class="input-group-addon glyphicon glyphicon-lock"></span>
+								<input type="password" class="form-control" placeholder="Optional" aria-describedby="basic-addon1" id="create_room_pw" maxlength="20">
+							</div>
+						</div>
+						<div class="row">
+							<select class="selectpicker" title="Choose a Game" id="create_game_type">
 								<option value="Connect Four">Connect Four</option>
 								<option value="Uno">Uno</option>
 							</select>
-						</div>
-						<div class="col-md-6 col-min-padding">
-							<select class="selectpicker form-control col-lg-12" title="Number of Players" id="create_num_players">
+							<select class="selectpicker" title="Number of Players" id="create_num_players">
 								<option disabled>Please select a game first</option>
 							</select>
 						</div>
-					</div>
-					<div class="row">
-						<a class="btn-big btn-big-green" href="#" role="button" id="create_room_button2">Create Room</a>
-						<div class="progress" id="loading">
-							<div class="progress-bar progress-bar-success progress-bar-striped active" role="progressbar" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100" style="width: 100%">
+						<div class="row">
+							<a class="btn-big btn-big-green" href="#" role="button" id="create_room_button2">Create Room</a>
+							<div class="progress" id="loading">
+								<div class="progress-bar progress-bar-success progress-bar-striped active" role="progressbar" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100" style="width: 100%">
+								</div>
 							</div>
 						</div>
+						<div class="msg alert alert-danger" id="createmsg">Create message</div>
 					</div>
-					<div class="row"><!--Placeholder--></div>
-				</div>
-			</div>
-			<div class="msg alert alert-danger" id="createmsg">Create message</div>
-		</div>
-		<div id="settings_box" class="box">
-		<a href="#" id="close_btn2" class="btn btn-default glyphicon glyphicon-remove"></a>
-			<div class="panel panel-default" id="settings_panel" >
-				<div class="panel-heading" id="settings_heading">Settings</div>
-				<div class="panel-body">
-					<div class="row"><!--Placeholder--></div>
-					<!--TODO: colorpicker here -->
 				</div>
 			</div>
 		</div>
-
+		<div id="settingsModal" class="modal fade">
+			<div class="modal-dialog">
+				<div class="modal-content">
+					<div class="modal-header">
+						<button type="button" class="close" data-dismiss="modal">&times;</button>
+						<h4 class="modal-title">Settings</h4>
+					</div>
+					<div class="modal-body">
+						<div class="row"> 
+							Pick a Color
+						</div>
+						<div class="row">
+							<div class="btn-group colorpicker" role="group">
+								<button type="button" class="btn btn-danger"><span class="glyphicon glyphicon-record" aria-hidden="true"></span></button>
+								<button type="button" class="btn btn-warning"><span class="glyphicon glyphicon-record" aria-hidden="true"></span></button>
+								<button type="button" class="btn btn-success"><span class="glyphicon glyphicon-record" aria-hidden="true"></span></button>
+								<button type="button" class="btn btn-primary"><span class="glyphicon glyphicon-record" aria-hidden="true"></span></button>
+								<button type="button" class="btn btn-info"><span class="glyphicon glyphicon-record" aria-hidden="true"></span></button>
+							</div>
+						</div>
+						<div class="row">
+							Twitch emotes are <input type="checkbox" id="emoteSwitch" checked />
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
 	</div>
 	<script type="text/javascript" src="jsgames.js"></script>
 </body>

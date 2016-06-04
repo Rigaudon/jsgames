@@ -31,7 +31,6 @@ Lobby.build = function(){
 	
 }
 
-
 //Game Room code
 //Uno
 var UnoRoom = Object();
@@ -812,8 +811,7 @@ socket.on('makeRoomResponse', function(code){
 			$("#create_room_pw").val("");
 			$("#create_num_players").selectpicker('refresh');
 			$("#create_game_type").selectpicker('refresh');
-
-			$("#close_btn").click();
+			$("#gameModal").modal('hide');
 		}
 	}
 });
@@ -992,37 +990,15 @@ $("#chatbox_main_msg").bind('keypress', function(e){
 	}
 });
 //todo: move these into builder
-//bring up creating room screen
-$("#create_room_button").click(function(){
-	$("#dim_div").css('left', '25%');
-	$("#dim_div").css('background-color','rgba(0,0,0,0.9)');
-	$("#create_room_box").css('left', '31%');
-});
 
 //bring up settings screen
 $("#settings_btn a").click(function(){
-	$("#dim_div").css('left', '25%');
-	$("#dim_div").css('background-color','rgba(0,0,0,0.9)');
-	$("#settings_box").css('left', '31%');
+	$("#emoteSwitch").bootstrapSwitch({onColor:'success', offColor:'danger'});
+	$("#emoteSwitch").on('switchChange.bootstrapSwitch', function(event, state){
+		emotesEnabled = state;
+	});
 });
 
-//close creating room screen
-$("#close_btn").click(function(){
-	$("#create_room_box").css('left', '125%');
-	setTimeout(function(){
-		$("#dim_div").css('left', '125%');
-		$("#dim_div").css('background-color','rgba(0,0,0,0)');
-	}, 500);
-});
-
-//close settings screen
-$("#close_btn2").click(function(){
-	$("#settings_box").css('left', '125%');
-	setTimeout(function(){
-		$("#dim_div").css('left', '125%');
-		$("#dim_div").css('background-color','rgba(0,0,0,0)')
-	}, 500);
-});
 
 //Send create room message to server
 $("#create_room_button2").click(function(){
@@ -1051,7 +1027,6 @@ $("#create_room_button2").click(function(){
 		}
 	}else{
 		error = "Invalid room name!";
-		console.log(room.name);
 	}
 
 	if(error!=""){
@@ -1071,8 +1046,20 @@ $("#back_to_lobby").click(function(){
 		case "Uno":
 		UnoRoom.leaveRoom();
 		break;
+	}
+});
+
+$(".colorpicker button").click(function(){
+	for(k in colors){
+		if($(this).hasClass("btn-"+colors[k])){
+			$("#chatname").removeClass('label-'+colors[myColor]);
+			myColor = k;
+			socket.emit('choosecolor', myColor);
+			$("#chatname").addClass('label-'+colors[myColor]);
+			break;
 		}
-	});
+	}
+});
 
 function validChars(str){
 	//TODO: IMPLEMENT ME
