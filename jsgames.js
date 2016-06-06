@@ -18,6 +18,7 @@ var currRoom = null;
 var onlineUsers = null;
 var playernum = null;
 var emotesEnabled = true;
+var emoteList = [];
 
 function preloadImages(imgarr){
 	for (var i = 0; i < imgarr.length; i++) {
@@ -747,7 +748,7 @@ socket.on('message2c', function(msg){
 	var msgbox = $('#messages');
 	var scrollBottom = false;
 
-	if(msgbox[0].scrollHeight-msgbox.scrollTop()==msgbox.outerHeight()){
+	if(Math.abs(msgbox[0].scrollHeight-msgbox.scrollTop() - msgbox.outerHeight()) < 50){
 		scrollBottom = true;
 	}
 
@@ -1112,4 +1113,11 @@ $(document).ready(function(){
 		$("#input_name").val(Cookies.get('name'));
 	}
 	preloadImages(emoteimglist);
+	if(typeof emoteimglist != "undefined"){
+		var path = "res/emotes/";
+		var ext = ".png";
+		for(var i=0;i<emoteimglist.length;i++){
+			emoteList.push(emoteimglist[i].replace(path, "").replace(ext, ""));
+		}
+	}
 });
