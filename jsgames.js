@@ -957,13 +957,17 @@ function removeRoom(roomId){
 }
 
 function processChatMessage(jqelem){
-	var txt = jqelem.text();
 	if(emotesEnabled && typeof emoteList != "undefined"){
 		var path = "res/emotes/";
+		var txt;
+		var new_txt;
 		for(var i=0;i<emoteList.length;i++){
-			txt = txt.replace(new RegExp(emoteList[i], "g"), "<img title='"+emoteList[i]+"' src='"+path+emoteList[i]+".png' />");
+			txt = jqelem.text();
+			new_txt = txt.replace(new RegExp(emoteList[i], "g"), "<img title='"+emoteList[i]+"' src='"+path+emoteList[i]+".png' />");
+			if(txt!=new_txt){
+				jqelem.html(new_txt);
+			}
 		}
-		jqelem.html(txt);
 	}
 }
 
