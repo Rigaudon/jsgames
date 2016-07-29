@@ -18,6 +18,7 @@ var currRoom = null;
 var onlineUsers = null;
 var playernum = null;
 var emotesEnabled = true;
+var soundsEnabled = false;
 var emoteList = [];
 
 function preloadImages(imgarr){
@@ -25,6 +26,23 @@ function preloadImages(imgarr){
 		$("<img />").attr("src", imgarr[i]);
 	}
 }
+
+(function($){
+  $.extend({
+    playSound: function(){
+      if(soundsEnabled){
+      	return $(
+        '<audio autoplay="autoplay" style="display:none;">'
+	          + '<source src="' + arguments[0] + '.mp3" />'
+	          + '<source src="' + arguments[0] + '.ogg" />'
+	          + '<embed src="' + arguments[0] + '.mp3" hidden="true" autostart="true" loop="false" class="playSound" />'
+	        + '</audio>'
+	      ).appendTo('body');
+      }
+    }
+  });
+
+})(jQuery);
 
 //Lobby Code
 var Lobby = Object();
@@ -269,6 +287,7 @@ UnoRoom.gameMessage = function(msg){
 			getRoomInfo(currRoom);
 		break;
 		case 'idraw':
+			$.playSound('res/sounds/card');
 			var orig = $("#uno_deck").position();
 			var h = $("#uno_deck").height();
 			//this assumes 20px margins;;
@@ -290,6 +309,7 @@ UnoRoom.gameMessage = function(msg){
 			}, 300);		
 		break;
 		case 'playerdraw':
+			$.playSound('res/sounds/card');
 			var orig = $("#uno_deck").position();
 			var h = $("#uno_deck").height();
 			//this assumes 20px margins;;
@@ -316,6 +336,7 @@ UnoRoom.gameMessage = function(msg){
 		case 'firstCard':
 			var orig = $("#uno_deck").position();
 			var h = $("#uno_deck").height();
+			$.playSound('res/sounds/card');
 			//this assumes 20px margins;;
 			var imgname = r.card.color.toLowerCase() + r.card.value.replace(" ", "").toLowerCase();
 			var animimg= $("<img class='dropdiv' src='res/uno/"+imgname+".png' style='position:absolute;top:"+orig.top+"px;left:+"+(orig.left+20)+"px' height='"+h+"px'>");
@@ -339,6 +360,7 @@ UnoRoom.gameMessage = function(msg){
 		break;
 		case 'makeMove':
 			var imgname;
+			$.playSound('res/sounds/card');
 			if(r.card.color=="Wild"){
 				if(r.card.value=="Draw 4"){
 					imgname = 'wilddraw4'+r.card.selectedColor.toLowerCase();
@@ -384,10 +406,12 @@ UnoRoom.gameMessage = function(msg){
 			$("#game_messages").append($("<span style='color:"+onlineUsers[1][i]+"'>").text(onlineUsers[0][i]));
 			$("#game_messages").append($("<span>").text(" won!"));
 			UnoRoom.myTurn = false;
+			$.playSound('res/sounds/win');
 		break;
 		case 'callUno':
 			var yell_uno = $("<div class='yell_uno'>").text("UNO!");
 			var outerwidth = 290/2;
+			$.playSound('res/sounds/buzz');
 			if(r.player!=playernum){
 				var l = ($("#uno_op_"+r.player).position().left+$("#uno_op_"+r.player).outerWidth()/2)-outerwidth/2;
 				var t = $("#uno_op_"+r.player).position().top;
@@ -479,7 +503,7 @@ ConnectFourRoom.buildRoom = function(gameState){
 
 	var board = $("<div id='connect_four_board'>");
 	for(var j=0;j<rows;j++){
-		var r = $("<div class='row c4row'>")
+		var r = $("<div class='row c4row'>");
 		for(var i=0;i<cols;i++){
 			var c4box = $("<div class='col-md-1 c4box' id='c4"+j+i+"'>");
 			c4box.click(function(){
@@ -637,6 +661,7 @@ ConnectFourRoom.makeMove = function(received){
 		$("#c4hoveranim").css('background-image','url("res/c4'+ConnectFourRoom.colors[(received.user+1)%2]+'.png")');
 		
 		target.addClass('c4'+ConnectFourRoom.colors[received.user]);
+		$.playSound('res/sounds/drop');
 	});
 }
 
@@ -680,6 +705,7 @@ ConnectFourRoom.victory = function(received){
 			socket.emit('requestReset', currRoom);
 		});
 		$("#game_messages").append($("<div>").append(reset_btn));
+		$.playSound('res/sounds/win');
 	}, 600);	
 }
 //Server com for logging in
@@ -699,6 +725,137 @@ function getPlayerNum(roomid){
 	socket.emit('requestPlayerNum', roomid);
 }
 
+var DrawRoom = Object();
+DrawRoom.paint = false; //whether or not the user is painting.
+DrawRoom.myTurn = true; //changeme
+DrawRoom.context = null;
+DrawRoom.canvas = null;
+DrawRoom.canvasElemsX = Array();
+DrawRoom.canvasElemsY = Array();
+DrawRoom.canvasDrag = Array();
+DrawRoom.selectedColor = "#000000";
+DrawRoom.brushSize = 5;
+
+DrawRoom.joinedRoom = function(){
+	$("#gameroombox").css('left', '-50%');
+	$("#create_room_button").hide();
+	$("#back_to_lobby").show();
+	$("#active_game_div").css('left', '42.5%');
+	$("#room_info").css('top', '85%');
+	$("#game_messages").css('top','90%');
+	getRoomInfo(currRoom);
+	activeGame = "Draw My Thing";
+}
+DrawRoom.leaveRoom = function(){
+	$("#active_game_div").css('left', '150%');
+	$("#back_to_lobby").hide();
+	$("#create_room_button").show();
+	$("#gameroombox").css('left', '42.5%');
+	$("#room_info").css('top', '105%');
+	$("#game_messages").css('top', '105%');
+	$("#game_messages").empty();
+	socket.emit('leaveRoom', currRoom);
+	activeGame = null;
+	currRoom = null;
+	playernum = null;
+}
+DrawRoom.buildRoom = function(received){
+	var active = $("#active_game_div");
+	active.empty();
+	var border = 20; // changeme
+
+	var drawingCanvas = $("<canvas id='drawcanvas' width='600' height='600' />");
+	var borderX = drawingCanvas.css("border-left-width");
+	var borderY = drawingCanvas.css("border-top-width");
+	drawingCanvas.mousedown(function(e){
+		if(!DrawRoom.paint && DrawRoom.myTurn){
+			var rect = DrawRoom.canvas.getBoundingClientRect();
+			//var mouseX = Math.round((e.clientX-rect.left)/(rect.right-rect.left)*DrawRoom.canvas.width);
+			//var mouseY = Math.round((e.clientY-rect.top)/(rect.bottom-rect.top)*DrawRoom.canvas.height);
+			var mouseX = e.clientX - rect.left - border;
+			var mouseY = e.clientY - rect.top - border;
+			DrawRoom.paint = true;
+			DrawRoom.addCanvasElems(mouseX, mouseY, false);
+		}
+	});
+
+	drawingCanvas.mousemove(function(e){
+		if(DrawRoom.paint && DrawRoom.myTurn){
+			var rect = DrawRoom.canvas.getBoundingClientRect();
+			//var mouseX = Math.round((e.clientX-rect.left)/(rect.right-rect.left)*DrawRoom.canvas.width);
+			//var mouseY = Math.round((e.clientY-rect.top)/(rect.bottom-rect.top)*DrawRoom.canvas.height);
+			var mouseX = e.clientX - rect.left - border;
+			var mouseY = e.clientY - rect.top - border;
+			DrawRoom.addCanvasElems(mouseX, mouseY, true);
+			DrawRoom.redraw(); //changeme
+		}
+	});
+	
+	drawingCanvas.mouseup(function(e){
+		DrawRoom.paint = false;
+	});
+
+	drawingCanvas.mouseleave(function(e){
+		DrawRoom.paint = false;
+	});
+
+	active.append($("<div>").append(drawingCanvas));
+
+	var optionsDiv = $("<div id='drawOptions'>");
+	optionsDiv.append("<span>Brush Size:</span><span id='drawBrushSize'>"+DrawRoom.brushSize+"</span>");
+	var colorPicker = $("<input id='drawColor' value='"+DrawRoom.selectedColor+"' type='button' />");
+	optionsDiv.append(colorPicker);
+
+	var sizeSlider = $("<div id='drawSlider'>");
+	optionsDiv.append(sizeSlider);	
+
+	active.append(optionsDiv);
+
+	$("#drawSlider").slider({
+		max: 15,
+		min: 0.5,
+		step: 0.1,
+		value: 5,
+		change: function(event, ui){
+			DrawRoom.brushSize = $(this).slider("value");
+			$("#drawBrushSize").text(DrawRoom.brushSize);
+		}
+	});
+	$("#drawColor").colorPicker({
+
+	});
+	DrawRoom.canvas = document.getElementById("drawcanvas");
+	DrawRoom.context = DrawRoom.canvas.getContext("2d");
+
+}
+DrawRoom.addCanvasElems = function(x, y, drag){
+	DrawRoom.canvasElemsX.push(x);
+	DrawRoom.canvasElemsY.push(y);
+	DrawRoom.canvasDrag.push(drag);
+}
+DrawRoom.redraw = function(){ //changeme
+	if(!DrawRoom.context){
+		return false;
+	}
+	
+	DrawRoom.context.clearRect(0, 0, DrawRoom.context.canvas.width, DrawRoom.context.canvas.height);
+
+	DrawRoom.context.strokeStyle = "#df4b26";
+	DrawRoom.context.lineJoin = "round";
+	DrawRoom.context.lineWidth = 5;
+			
+	for(var i=0; i < DrawRoom.canvasElemsX.length; i++) {		
+		DrawRoom.context.beginPath();
+		if(DrawRoom.canvasDrag[i] && i){
+			DrawRoom.context.moveTo(DrawRoom.canvasElemsX[i-1], DrawRoom.canvasElemsY[i-1]);
+		}else{
+			DrawRoom.context.moveTo(DrawRoom.canvasElemsX[i]-1, DrawRoom.canvasElemsY[i]);
+		}
+		DrawRoom.context.lineTo(DrawRoom.canvasElemsX[i], DrawRoom.canvasElemsY[i]);
+		DrawRoom.context.closePath();
+		DrawRoom.context.stroke();
+	}
+}
 //Login code, moving to selection 
 socket.on('login status', function(status){
 	if(status==1){
@@ -849,6 +1006,7 @@ socket.on('allRooms', function(rooms){
 });
 
 socket.on('joinRoomSuccess', function(room){
+	$.playSound('res/sounds/join');
 	var r = JSON.parse(room);
 	console.log("Successfully joined room "+r.id);
 	currRoom = r.id;
@@ -863,6 +1021,10 @@ socket.on('joinRoomSuccess', function(room){
 		UnoRoom.buildRoom(r);
 		UnoRoom.joinedRoom();
 		break;
+		case "Draw My Thing":
+		DrawRoom.buildRoom(r.gameState);
+		DrawRoom.joinedRoom();
+		break;
 	}
 
 });
@@ -873,6 +1035,7 @@ socket.on('joinRoomFailure', function(msg){
 
 socket.on('leaveStatus', function(code){
 	if(code==1){
+		$.playSound('res/sounds/leave');
 		console.log("Successfully left room.");
 	}
 });
@@ -972,7 +1135,7 @@ function processChatMessage(jqelem){
 }
 
 //Client JS Code
-
+//Bugs: Chat only 1 emote, draw4red drawn, uno table ordering
 
 //Name picking
 $("#input_name").bind('keypress', function(e){
@@ -1001,6 +1164,10 @@ $("#settings_btn a").click(function(){
 	$("#emoteSwitch").bootstrapSwitch({onColor:'success', offColor:'danger'});
 	$("#emoteSwitch").on('switchChange.bootstrapSwitch', function(event, state){
 		emotesEnabled = state;
+	});
+	$("#soundSwitch").bootstrapSwitch({onColor:'success', offColor:'danger'});
+	$("#soundSwitch").on('switchChange.bootstrapSwitch', function(event, state){
+		soundsEnabled = state;
 	});
 });
 
@@ -1051,6 +1218,9 @@ $("#back_to_lobby").click(function(){
 		case "Uno":
 		UnoRoom.leaveRoom();
 		break;
+		case "Draw My Thing":
+		DrawRoom.leaveRoom();
+		break;
 	}
 });
 
@@ -1066,6 +1236,15 @@ $(".colorpicker button").click(function(){
 	}
 });
 
+$("#create_room_button").click(function(){
+	$.playSound('res/sounds/click2');
+});
+
+$("#create_room_button2").click(function(){
+	$.playSound('res/sounds/click2');
+});
+
+
 function validChars(str){
 	//TODO: IMPLEMENT ME
 	return true;
@@ -1077,6 +1256,7 @@ game_players["Connect Four"] = [2];
 game_players["Chess"] = [2];
 game_players["Uno"] = [2,3,4,5,6];
 game_players["Checkers"] = [2];
+game_players["Draw My Thing"] = [3,4,5,6,7,8];
 $("#create_game_type").change(function(){
 	var possible = game_players[$("#create_game_type").val()];
 	var list = $("#create_num_players");
@@ -1109,6 +1289,7 @@ $(window).resize(function(){
 		ConnectFourRoom.resize();
 	}
 })
+
 
 $(document).ready(function(){
 	$("#name_select").fadeIn(2000);

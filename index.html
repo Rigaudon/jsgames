@@ -10,8 +10,10 @@
 	<script src="bootstrap-select-1.10.0/dist/js/bootstrap-select.min.js"></script>
 	<script src="js.cookie.js"></script>
 	<script src="jquery-ui-1.11.4/jquery-ui.min.js"></script>
+	<link rel="stylesheet" href="jquery-ui-1.11.4/jquery-ui.min.css" />
 	<link rel="stylesheet" href="bootstrap-switch.min.css">
 	<script src="bootstrap-switch.min.js"></script>
+	<script type="text/javascript" src="jqColorPicker.min.js"></script>
 	<link rel="stylesheet" href="main.css">
 	<script src="imglist.js"></script>
 </head>
@@ -66,7 +68,6 @@
 				</div>
 				<div class="panel-body">
 					<div id="onlinelist"></div>
-					
 				</div>
 			</div>
 		</div>
@@ -115,6 +116,7 @@
 							<select class="selectpicker" title="Choose a Game" id="create_game_type">
 								<option value="Connect Four">Connect Four</option>
 								<option value="Uno">Uno</option>
+								<option value="Draw My Thing">Draw My Thing</option>
 							</select>
 							<select class="selectpicker" title="Number of Players" id="create_num_players">
 								<option disabled>Please select a game first</option>
@@ -153,7 +155,20 @@
 							</div>
 						</div>
 						<div class="row">
-							Twitch emotes are <input type="checkbox" id="emoteSwitch" checked />
+						<div class="col-md-6" style="text-align:right">
+							Chat emotes
+						</div>
+						<div class="col-md-6" style="text-align:left">
+							 <input type="checkbox" id="emoteSwitch" checked /> 
+						</div>
+						</div>
+						<div class="row">
+						<div class="col-md-6" style="text-align:right">
+							Sound effects
+						</div>
+						<div class="col-md-6" style="text-align:left">
+							<input type="checkbox" id="soundSwitch" />
+						</div>
 						</div>
 					</div>
 				</div>

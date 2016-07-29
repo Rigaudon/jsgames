@@ -3,10 +3,13 @@ var app = express();
 app.use(express.static(__dirname+"/"))
 var http = require('http').Server(app);
 var io = require('socket.io')(http);
-var validGames = ["Connect Four", "Uno"];
+
+var validGames = ["Connect Four", "Uno", "Draw My Thing"];
 var validPlayers = {};
 validPlayers["Connect Four"] = ["2"];
 validPlayers["Uno"] = ["2", "3", "4", "5", "6"];
+validPlayers["Draw My Thing"] = ["3", "4", "5", "6", "7", "8"];
+
 var clients = Object();
 clients.sockets = {};
 clients.colors = {};
@@ -21,6 +24,7 @@ clients.addClient = function(socket, name){
 	clients.online++;
 	clients.broadcastOnlineUsers();
 }
+
 clients.removeClient = function(socket){
 	var name = clients.getNameFromSocket(socket);
 	if(name!=-false){
@@ -39,9 +43,11 @@ clients.removeClient = function(socket){
 		//error
 	}
 }
+
 clients.name_available = function(name){
 	return clients.sockets[name]==undefined;
 }
+
 clients.getNameFromSocket = function(socket){
 	for(var k in clients.sockets){
 		if(clients.sockets[k]==socket){
@@ -50,9 +56,11 @@ clients.getNameFromSocket = function(socket){
 	}
 	return false;
 }
+
 clients.getSocketFromName = function(name){
 	return clients.sockets[name];
 }
+
 clients.setColor = function(name, color){
 	if(!clients.name_available(name)){
 		clients.colors[name] = color;
@@ -61,6 +69,7 @@ clients.setColor = function(name, color){
 		return false
 	}
 }
+
 clients.broadcastOnlineUsers = function(){
 	var toEmit = [[],[]];
 	for(var k in clients.colors){
@@ -78,6 +87,7 @@ clients.requestJoin = function(name, roomid){
 		clients.gameRooms[name].push(roomid);
 	}
 }
+
 clients.leaveRoom = function(name, roomid){
 	var j = clients.gameRooms[name].indexOf(roomid);
 	if(j!=-1){
@@ -441,7 +451,6 @@ gamerooms.createRoom = function(id, name, pw, type, numplayers, playersocket){
 				}
 				gamerooms.broadcastAllRooms();
 			}
-
 		break;
 		case("Uno"):
 			var unoroom = newroom;
@@ -488,8 +497,8 @@ gamerooms.createRoom = function(id, name, pw, type, numplayers, playersocket){
 					wild4.value = "Draw 4";
 					unoroom.gameState.deck.push(wild4);
 				}
-
 			}
+
 			unoroom.isEmpty = function(){
 				for(var l=0;l<unoroom.playersockets.length;l++){
 					if(unoroom.playersockets[l]){
@@ -498,6 +507,7 @@ gamerooms.createRoom = function(id, name, pw, type, numplayers, playersocket){
 				}
 				return true;
 			}
+
 			unoroom.playerJoin = function(userSocket){
 				if(unoroom.playersockets.indexOf(userSocket)!=-1){
 					userSocket.emit('joinRoomFailure', 'Full');
@@ -649,9 +659,13 @@ gamerooms.createRoom = function(id, name, pw, type, numplayers, playersocket){
 						toEmit.message = 'opponentTurn';
 						toEmit.player = unoroom.gameState.turn;
 					}
-					unoroom.playersockets[j].emit('gameMessage', JSON.stringify(toEmit));
+					if(unoroom.playersockets[j]){
+						unoroom.playersockets[j].emit('gameMessage', JSON.stringify(toEmit));
+					}
 				}
 			}
+
+			//Bug: sometimes deals wild ie, "reddraw4"
 			unoroom.dealRandomCardsToPlayer = function(numCards, playerNum, delay){
 				if(unoroom.reshuffling){
 					setTimeout(function(){ unoroom.dealRandomCardsToPlayer(numCards, playerNum, delay); },500);
@@ -663,6 +677,7 @@ gamerooms.createRoom = function(id, name, pw, type, numplayers, playersocket){
 						while(unoroom.gameState.discard.length>1){
 							var c = unoroom.gameState.discard[0];
 							unoroom.gameState.discard.splice(0,1);
+
 							unoroom.gameState.deck.push(c);
 						}
 						unoroom.reshuffling = false;
@@ -879,6 +894,90 @@ gamerooms.createRoom = function(id, name, pw, type, numplayers, playersocket){
 				if(hand.length==1){
 					unoroom.gameState.unoSafe[player] = false;
 				}
+			}
+		break;
+		case("Draw My Thing"):
+			var drawroom = newroom;
+			drawroom.gameState.activePlayers = 0;
+			drawroom.gameState.status = "Waiting for Players";
+			drawroom.activePlayers = 0;
+
+			drawroom.playerJoin = function(userSocket){
+				var room = drawroom;
+				
+				if(room.playersockets.indexOf(userSocket)==-1){
+					if(room.activePlayers==room.numPlayers){
+						userSocket.emit('joinRoomFailure', 'Room is full');
+						return false;
+					}
+
+					for(var l=0;l<room.playersockets.length;l++){
+						if(!room.playersockets[l]){
+							room.playersockets[l] = userSocket;
+							room.players[l] = clients.getNameFromSocket(userSocket);
+							break;
+						}
+					}
+					
+					var toEmit = {};
+					toEmit["id"] = room.id;
+					toEmit["name"] = room.name;
+					toEmit["players"] = room.players;
+					toEmit["game"] = room.game;
+					toEmit["gameState"] = room.gameState;
+
+					userSocket.emit('joinRoomSuccess', JSON.stringify(toEmit));
+					console.log("Room "+room.id+": User "+clients.getNameFromSocket(userSocket)+" joined the room");
+					//update game room list
+					gamerooms.broadcastAllRooms();
+					//broadcast join to all users
+					var n = clients.getNameFromSocket(userSocket);
+					var toEmit = Object();
+					toEmit.message = 'playerJoin';
+					toEmit.id = room.id;
+					toEmit.player = n;
+					room.emitToPlayers('gameMessage', JSON.stringify(toEmit));
+					
+					if(room.gameState.status=="Playing"){
+						room.startGame();
+					}
+					return true;
+				}else{
+					userSocket.emit('joinRoomFailure', 'Already in room');
+					return false;
+				}
+			}
+
+			drawroom.playerLeave = function(userSocket){
+				//remove user from room roomid
+				var i = drawroom.playersockets.indexOf(userSocket);
+				var n = clients.getNameFromSocket(userSocket);
+				if(i == -1){
+					return false;
+				}
+				drawroom.players[i] = null;
+				drawroom.playersockets[i] = null;
+				console.log("Room "+drawroom.id+": User "+n+" left the room");
+				userSocket.emit('leaveStatus', 1);
+				if(drawroom.isEmpty()){
+					gamerooms.deleteRoom(drawroom.id);
+				}else{
+					var toEmit = Object();
+					toEmit.message = 'playerLeave';
+					toEmit.id = drawroom.id;
+					toEmit.playerName = n;
+					drawroom.emitToPlayers('gameMessage', JSON.stringify(toEmit));
+				}
+				gamerooms.broadcastAllRooms();
+			}
+
+			drawroom.isEmpty = function(){
+				for(var i=0;i<drawroom.playersockets.length;i++){
+					if(drawroom.playersockets[i]!=null){
+						return false;
+					}
+				}
+				return true;
 			}
 		break;
 	}
