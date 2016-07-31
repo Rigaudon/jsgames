@@ -47,7 +47,7 @@ function preloadImages(imgarr){
 //Lobby Code
 var Lobby = Object();
 Lobby.build = function(){
-	
+	//implement me
 }
 
 //Game Room code
@@ -726,24 +726,29 @@ function getPlayerNum(roomid){
 }
 
 var DrawRoom = Object();
-DrawRoom.paint = false; //whether or not the user is painting.
 DrawRoom.myTurn = true; //changeme
 DrawRoom.context = null;
 DrawRoom.canvas = null;
-DrawRoom.canvasElemsX = Array();
-DrawRoom.canvasElemsY = Array();
-DrawRoom.canvasDrag = Array();
+DrawRoom.topContext = null;
 DrawRoom.selectedColor = "#000000";
-DrawRoom.brushSize = 5;
+DrawRoom.brushSize = 8;
+DrawRoom.transactions = Array();
+DrawRoom.currTransaction = Object();
+DrawRoom.tool = "line";
 
 DrawRoom.joinedRoom = function(){
 	$("#gameroombox").css('left', '-50%');
 	$("#create_room_button").hide();
 	$("#back_to_lobby").show();
-	$("#active_game_div").css('left', '42.5%');
+	$("#active_game_div").css('width', '85%');
+	$("#active_game_div").css('left', '32.5%');
+	$("#room_info").css('left', '77.5%');
 	$("#room_info").css('top', '85%');
-	$("#game_messages").css('top','90%');
+	//$("#game_messages").css('top','90%');
 	getRoomInfo(currRoom);
+	$("#onlinebox").css('left', '0%');
+	$("#chatmain").css('left', '125%');
+	$("#creategamebox").css('left', '50%');
 	activeGame = "Draw My Thing";
 }
 DrawRoom.leaveRoom = function(){
@@ -752,8 +757,13 @@ DrawRoom.leaveRoom = function(){
 	$("#create_room_button").show();
 	$("#gameroombox").css('left', '42.5%');
 	$("#room_info").css('top', '105%');
-	$("#game_messages").css('top', '105%');
-	$("#game_messages").empty();
+	$("#room_info").css('left', '56.5%');
+	//$("#game_messages").css('top', '105%');
+	//$("#game_messages").empty();
+	$("#onlinebox").css('left', '25%');
+	$("#chatmain").css('left', '105%');
+	$("#active_game_div").css('width', '60%');
+	$("#creategamebox").css('left', '47.25%');
 	socket.emit('leaveRoom', currRoom);
 	activeGame = null;
 	currRoom = null;
@@ -764,98 +774,364 @@ DrawRoom.buildRoom = function(received){
 	active.empty();
 	var border = 20; // changeme
 
-	var drawingCanvas = $("<canvas id='drawcanvas' width='600' height='600' />");
+	var drawingCanvas = $("<canvas id='drawcanvas' width='1000' height='800' />");
 	var borderX = drawingCanvas.css("border-left-width");
 	var borderY = drawingCanvas.css("border-top-width");
-	drawingCanvas.mousedown(function(e){
-		if(!DrawRoom.paint && DrawRoom.myTurn){
-			var rect = DrawRoom.canvas.getBoundingClientRect();
-			//var mouseX = Math.round((e.clientX-rect.left)/(rect.right-rect.left)*DrawRoom.canvas.width);
-			//var mouseY = Math.round((e.clientY-rect.top)/(rect.bottom-rect.top)*DrawRoom.canvas.height);
+
+	var topLayer = $("<canvas id='toplayer' width='1000' height='800' />");
+	topLayer.mousedown(function(e){
+		if(DrawRoom.myTurn){
+			var rect = DrawRoom.canvas.getBoundingClientRect(); //changeme: move so not called so much
 			var mouseX = e.clientX - rect.left - border;
 			var mouseY = e.clientY - rect.top - border;
-			DrawRoom.paint = true;
-			DrawRoom.addCanvasElems(mouseX, mouseY, false);
-		}
+			if(DrawRoom.tool=="line"){
+				DrawRoom.currTransaction.type = "line";
+				DrawRoom.currTransaction.x = mouseX;
+				DrawRoom.currTransaction.y = mouseY;
+				DrawRoom.currTransaction.arrayX = Array();
+				DrawRoom.currTransaction.arrayY = Array();
+				DrawRoom.currTransaction.brushSize = DrawRoom.brushSize;
+				DrawRoom.currTransaction.color = DrawRoom.selectedColor; //?changeme
+			}else if(DrawRoom.tool=="fill"){
+				DrawRoom.currTransaction.type = "fill";
+				DrawRoom.currTransaction.x = mouseX;
+				DrawRoom.currTransaction.y = mouseY;
+				DrawRoom.currTransaction.color = DrawRoom.selectedColor; //?changeme
+				DrawRoom.doFill(DrawRoom.currTransaction);
+				DrawRoom.killCurrentTransaction();
+			}else if(DrawRoom.tool=="eraser"){
+				DrawRoom.currTransaction.type = "line";
+				DrawRoom.currTransaction.x = mouseX;
+				DrawRoom.currTransaction.y = mouseY;
+				DrawRoom.currTransaction.arrayX = Array();
+				DrawRoom.currTransaction.arrayY = Array();
+				DrawRoom.currTransaction.brushSize = DrawRoom.brushSize;
+				DrawRoom.currTransaction.color = "#FFFFFF";
+			}
+		} 
 	});
 
-	drawingCanvas.mousemove(function(e){
-		if(DrawRoom.paint && DrawRoom.myTurn){
-			var rect = DrawRoom.canvas.getBoundingClientRect();
-			//var mouseX = Math.round((e.clientX-rect.left)/(rect.right-rect.left)*DrawRoom.canvas.width);
-			//var mouseY = Math.round((e.clientY-rect.top)/(rect.bottom-rect.top)*DrawRoom.canvas.height);
-			var mouseX = e.clientX - rect.left - border;
-			var mouseY = e.clientY - rect.top - border;
-			DrawRoom.addCanvasElems(mouseX, mouseY, true);
-			DrawRoom.redraw(); //changeme
+	topLayer.mousemove(function(e){
+		if(DrawRoom.myTurn){
+			if(DrawRoom.currTransaction.type=="line" || DrawRoom.currTransaction.type=="eraser"){
+				var rect = DrawRoom.canvas.getBoundingClientRect();
+				var mouseX = e.clientX - rect.left - border;
+				var mouseY = e.clientY - rect.top - border;
+				DrawRoom.currTransaction.arrayX.push(mouseX);
+				DrawRoom.currTransaction.arrayY.push(mouseY);
+				DrawRoom.drawLineTick();
+			}
+			if(DrawRoom.tool=="line"){
+				var rect = DrawRoom.canvas.getBoundingClientRect();
+				var mouseX = e.clientX - rect.left - border;
+				var mouseY = e.clientY - rect.top - border;
+				DrawRoom.drawPreviewBrush(mouseX, mouseY);
+			}
 		}
 	});
 	
-	drawingCanvas.mouseup(function(e){
-		DrawRoom.paint = false;
+	topLayer.mouseup(function(e){
+		if(DrawRoom.myTurn){
+			DrawRoom.killCurrentTransaction();
+		}
 	});
 
-	drawingCanvas.mouseleave(function(e){
-		DrawRoom.paint = false;
+	topLayer.mouseleave(function(e){
+		if(DrawRoom.myTurn){
+			DrawRoom.killCurrentTransaction();
+		}
 	});
 
-	active.append($("<div>").append(drawingCanvas));
+	active.append($("<div>").append(drawingCanvas).append(topLayer));
 
-	var optionsDiv = $("<div id='drawOptions'>");
-	optionsDiv.append("<span>Brush Size:</span><span id='drawBrushSize'>"+DrawRoom.brushSize+"</span>");
-	var colorPicker = $("<input id='drawColor' value='"+DrawRoom.selectedColor+"' type='button' />");
-	optionsDiv.append(colorPicker);
+	var optionsDiv = $("<div id='drawOptions' class='panel panel-default'>");
+	optionsDiv.append($("<div class='panel-heading'>").text("Options"));
 
+	var optionsBody = $("<div class='panel-body'>");
+
+	optionsBody.append($("<div class='option-label'>").text("Tools"));
+	var toolsDiv = $("<div id='drawToolsDiv'>");
+	var tools1 = $("<div class='btn-group'>");
+
+	var brushTool = $("<button type='button' class='btn btn-default'><img src='res/dmt/brush.png'/></button>");
+	brushTool.click(function(e){
+		DrawRoom.tool = "line";
+		topLayer.css('cursor', 'none');
+	});
+	tools1.append(brushTool);
+
+	var fillTool = $("<button type='button' class='btn btn-default'><img src='res/dmt/fill.png'/></button>");
+	fillTool.click(function(e){
+		DrawRoom.tool = "fill";
+		DrawRoom.topContext.clearRect(0, 0, DrawRoom.topContext.canvas.width, DrawRoom.topContext.canvas.height);		
+		topLayer.css('cursor', 'url("res/dmt/fillsmall.png"), default');
+	});
+	tools1.append(fillTool);
+
+	var eraserTool = $("<button type='button' class='btn btn-default'><img src='res/dmt/eraser.png'/></button>");
+	eraserTool.click(function(e){
+		DrawRoom.tool = "eraser";
+		DrawRoom.topContext.clearRect(0, 0, DrawRoom.topContext.canvas.width, DrawRoom.topContext.canvas.height);		
+		topLayer.css('cursor', 'url("res/dmt/erasersmall.png"), default');
+	});
+	tools1.append(eraserTool);
+	toolsDiv.append(tools1);
+
+	toolsDiv.append("&nbsp;");
+	
+	var tools2 = $("<div class='btn-group'>");
+	var undoTool = $("<button type='button' class='btn btn-default'><img src='res/dmt/undo.png'/></button>");
+	undoTool.click(function(e){
+		DrawRoom.topContext.clearRect(0, 0, DrawRoom.topContext.canvas.width, DrawRoom.topContext.canvas.height);		
+		DrawRoom.undoLastTransaction();
+	});
+	tools2.append(undoTool);
+
+	var clearTool = $("<button type='button' class='btn btn-default'><img src='res/dmt/clear.png'/></button>");
+	clearTool.click(function(e){
+		DrawRoom.topContext.clearRect(0, 0, DrawRoom.topContext.canvas.width, DrawRoom.topContext.canvas.height);
+		DrawRoom.clearCanvas();
+	});
+	tools2.append(clearTool);
+
+	toolsDiv.append(tools2);
+	optionsBody.append(toolsDiv);
+
+	optionsBody.append($("<div class='option-label'>").text("Brush Size"));
 	var sizeSlider = $("<div id='drawSlider'>");
-	optionsDiv.append(sizeSlider);	
+	optionsBody.append(sizeSlider);	
 
+	optionsBody.append($("<div class='option-label'>").text("Color"));
+	var colorPicker = $("<input id='drawColor' value='"+DrawRoom.selectedColor+"' type='button' />");
+	optionsBody.append(colorPicker);
+
+	optionsDiv.append(optionsBody);
 	active.append(optionsDiv);
 
 	$("#drawSlider").slider({
-		max: 15,
-		min: 0.5,
-		step: 0.1,
-		value: 5,
+		max: 30,
+		min: 1,
+		step: 1,
+		value: 8,
 		change: function(event, ui){
 			DrawRoom.brushSize = $(this).slider("value");
-			$("#drawBrushSize").text(DrawRoom.brushSize);
+			//$("#drawBrushSize").text(DrawRoom.brushSize);
 		}
 	});
 	$("#drawColor").colorPicker({
-
+		init: function(elm, colors) { 
+			elm.style.backgroundColor = elm.value;
+		},
+		actionCallback: function(e, action){
+			DrawRoom.selectedColor = $("#drawColor").attr("value");
+		},
+		memoryColors: [	{r:255, g:0, b:0},
+						{r:255, g:150, b:0},
+						{r:255, g:255, b:0},
+						{r:0, g:255, b:0},
+						{r:0, g:255, b:255},
+						{r:0, g:0, b:255},
+						{r:255, g:0, b:255},
+						{r:255, g:255, b:255}
+						],
+		size:2,
+		resizeable:false
 	});
 	DrawRoom.canvas = document.getElementById("drawcanvas");
 	DrawRoom.context = DrawRoom.canvas.getContext("2d");
+	DrawRoom.topContext = document.getElementById("toplayer").getContext("2d");
 
+	setTimeout(function(){ DrawRoom.resize(); }, 1000);
 }
-DrawRoom.addCanvasElems = function(x, y, drag){
-	DrawRoom.canvasElemsX.push(x);
-	DrawRoom.canvasElemsY.push(y);
-	DrawRoom.canvasDrag.push(drag);
+
+DrawRoom.resize = function(){
+	var p = $("#drawcanvas").position();
+	$("#toplayer").css('top', p.top);
+	$("#toplayer").css('left', p.left);
 }
-DrawRoom.redraw = function(){ //changeme
-	if(!DrawRoom.context){
+
+DrawRoom.killCurrentTransaction = function(){
+	if(DrawRoom.currTransaction.type=="line"){
+		DrawRoom.transactions.push(DrawRoom.currTransaction);
+		DrawRoom.currTransaction = Object();
+	}else if(DrawRoom.currTransaction.type=="fill"){
+		DrawRoom.transactions.push(DrawRoom.currTransaction);
+		DrawRoom.currTransaction = Object();
+	}else if(DrawRoom.currTransaction.type=="eraser"){
+		DrawRoom.transactions.push(DrawRoom.currTransaction);
+		DrawRoom.currTransaction = Object();
+	}
+}
+
+DrawRoom.undoLastTransaction = function(){
+	if(DrawRoom.transactions.length > 0){
+		DrawRoom.transactions.pop();
+		DrawRoom.redraw();
+	}
+}
+
+DrawRoom.drawPreviewBrush = function(x, y){
+	if(!DrawRoom.topContext){
 		return false;
 	}
 	
-	DrawRoom.context.clearRect(0, 0, DrawRoom.context.canvas.width, DrawRoom.context.canvas.height);
-
-	DrawRoom.context.strokeStyle = "#df4b26";
-	DrawRoom.context.lineJoin = "round";
-	DrawRoom.context.lineWidth = 5;
-			
-	for(var i=0; i < DrawRoom.canvasElemsX.length; i++) {		
-		DrawRoom.context.beginPath();
-		if(DrawRoom.canvasDrag[i] && i){
-			DrawRoom.context.moveTo(DrawRoom.canvasElemsX[i-1], DrawRoom.canvasElemsY[i-1]);
-		}else{
-			DrawRoom.context.moveTo(DrawRoom.canvasElemsX[i]-1, DrawRoom.canvasElemsY[i]);
-		}
-		DrawRoom.context.lineTo(DrawRoom.canvasElemsX[i], DrawRoom.canvasElemsY[i]);
-		DrawRoom.context.closePath();
-		DrawRoom.context.stroke();
-	}
+	DrawRoom.topContext.clearRect(0, 0, DrawRoom.topContext.canvas.width, DrawRoom.topContext.canvas.height);		
+	DrawRoom.topContext.beginPath();
+	DrawRoom.topContext.moveTo(x-1, y);
+	DrawRoom.topContext.lineJoin = "round";
+	DrawRoom.topContext.lineTo(x, y);
+	DrawRoom.topContext.closePath();
+	DrawRoom.topContext.strokeStyle = DrawRoom.selectedColor;
+	DrawRoom.topContext.lineWidth = DrawRoom.brushSize;
+	DrawRoom.topContext.stroke();
 }
+
+DrawRoom.clearCanvas = function(){
+	DrawRoom.context.fillStyle = "white";
+	DrawRoom.context.fillRect(0, 0, DrawRoom.context.canvas.width, DrawRoom.context.canvas.height);
+	var clearTrans = Object();
+	clearTrans.type = "clear";
+	DrawRoom.transactions.push(clearTrans);
+}
+
+DrawRoom.matchStartColor = function(colorLayer, pixelPos, startColor){
+	var r = colorLayer.data[pixelPos];
+	var g = colorLayer.data[pixelPos+1];
+	var b = colorLayer.data[pixelPos+2];
+	var thresh = 0;
+	return Math.abs(r-startColor[0])<=thresh && Math.abs(g-startColor[1])<=thresh && Math.abs(b-startColor[2])<=thresh;
+}
+
+DrawRoom.colorPixel = function(colorLayer, pixelPos, color){
+	colorLayer.data[pixelPos] = color[0];
+	colorLayer.data[pixelPos+1] = color[1];
+	colorLayer.data[pixelPos+2] = color[2];
+	colorLayer.data[pixelPos+3] = 255;
+}
+
+DrawRoom.hexToRgb = function(hex) {
+    var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result ? [
+        parseInt(result[1], 16),
+        parseInt(result[2], 16),
+        parseInt(result[3], 16)
+    ] : null;
+}
+
+DrawRoom.doFill = function(transaction){
+	var pixelStack = [[Math.round(transaction.x), Math.round(transaction.y)]];
+	var canvasWidth = DrawRoom.context.canvas.width;
+	var canvasHeight = DrawRoom.context.canvas.height;
+	var imgdata = DrawRoom.context.getImageData(transaction.x, transaction.y, 1, 1).data;
+	var startColor = [imgdata[0], imgdata[1], imgdata[2]];
+	var curColorHex = DrawRoom.hexToRgb(transaction.color);
+	if(startColor[0]==curColorHex[0] && startColor[1]==curColorHex[1] && startColor[2]==curColorHex[2]){
+		return;
+	}
+	var colorLayer = DrawRoom.context.getImageData(0, 0, canvasWidth, canvasHeight);
+	while(pixelStack.length){
+		var newPos, x, y, pixelPos, reachLeft, reachRight;
+		newPos = pixelStack.pop();
+		x = newPos[0];
+		y = newPos[1];
+		pixelPos = (y*canvasWidth+x)*4;
+		while(y-- >= 0 && DrawRoom.matchStartColor(colorLayer, pixelPos, startColor)){
+			pixelPos -= canvasWidth*4;
+		}
+		pixelPos += canvasWidth*4;
+		++y;
+		reachLeft = false;
+		reachRight = false;
+		while(y++ < canvasHeight-1 && DrawRoom.matchStartColor(colorLayer, pixelPos, startColor)){
+			DrawRoom.colorPixel(colorLayer, pixelPos, curColorHex);
+			if(x>0){
+				if(DrawRoom.matchStartColor(colorLayer, pixelPos-4, startColor)){
+					if(!reachLeft){
+						pixelStack.push([x-1, y]);
+						reachLeft = true;
+					}
+				}else if(reachLeft){
+					reachLeft = false;
+				}
+			}
+
+			if(x < canvasWidth-1){
+				if(DrawRoom.matchStartColor(colorLayer, pixelPos+4, startColor)){
+					if(!reachRight){
+						pixelStack.push([x+1, y]);
+						reachRight = true;
+					}
+				}else if(reachRight){
+					reachRight = false;
+				}
+			}
+			pixelPos += canvasWidth*4;
+
+		}
+	}
+	DrawRoom.context.putImageData(colorLayer, 0, 0);
+}
+
+DrawRoom.redraw = function(){ //changeme
+	if(!DrawRoom.context || DrawRoom.transactions.length==0){
+		return false;
+	}
+	DrawRoom.context.fillStyle = "white";
+	DrawRoom.context.fillRect(0, 0, DrawRoom.context.canvas.width, DrawRoom.context.canvas.height);	
+	DrawRoom.context.lineJoin = "round";	
+	var i = DrawRoom.transactions.length-1;
+	while(i>0 && DrawRoom.transactions[i].type != "clear"){
+		i--;
+	}
+	for(; i < DrawRoom.transactions.length; i++) {
+		var currTrans = DrawRoom.transactions[i];
+		if(currTrans.type=="line"){
+			DrawRoom.context.lineWidth = currTrans.brushSize;
+			DrawRoom.context.strokeStyle = currTrans.color;
+			DrawRoom.context.beginPath();
+
+			DrawRoom.context.moveTo(currTrans.arrayX[0]-1, currTrans.arrayY[0]);
+			DrawRoom.context.lineTo(currTrans.arrayX[0], currTrans.arrayY[0]);
+			for(var j=1; j<currTrans.arrayX.length; ++j){
+				DrawRoom.context.lineTo(currTrans.arrayX[j], currTrans.arrayY[j]);
+			}
+
+			//Second retrace helps with the splitting ends, performance seems to be not an issue
+			for(var j=currTrans.arrayX.length; j>=0; --j){
+				DrawRoom.context.lineTo(currTrans.arrayX[j], currTrans.arrayY[j]);
+			}
+
+			DrawRoom.context.closePath();
+			DrawRoom.context.stroke();
+		}else if(currTrans.type=="fill"){
+			DrawRoom.doFill(currTrans);
+		}
+	}
+	//DrawRoom.context.stroke();
+}
+
+DrawRoom.drawLineTick = function(){
+	if(!DrawRoom.context){
+		return false;
+	}
+	DrawRoom.context.beginPath();
+	var last = DrawRoom.currTransaction.arrayX.length-1;
+	if(last < 1){
+		return;
+	}
+	if(last){
+		DrawRoom.context.moveTo(DrawRoom.currTransaction.arrayX[last-1], DrawRoom.currTransaction.arrayY[last-1]);
+	}else{
+		DrawRoom.context.moveTo(DrawRoom.currTransaction.arrayX[last]-1, DrawRoom.currTransaction.arrayY[last]);
+	}
+	DrawRoom.context.lineJoin = "round";
+	DrawRoom.context.lineTo(DrawRoom.currTransaction.arrayX[last], DrawRoom.currTransaction.arrayY[last]);
+	DrawRoom.context.closePath();
+	DrawRoom.context.strokeStyle = DrawRoom.currTransaction.color;
+	DrawRoom.context.lineWidth = DrawRoom.currTransaction.brushSize;
+	DrawRoom.context.stroke();
+}
+
 //Login code, moving to selection 
 socket.on('login status', function(status){
 	if(status==1){
@@ -1024,6 +1300,7 @@ socket.on('joinRoomSuccess', function(room){
 		case "Draw My Thing":
 		DrawRoom.buildRoom(r.gameState);
 		DrawRoom.joinedRoom();
+		DrawRoom.clearCanvas();
 		break;
 	}
 
@@ -1287,6 +1564,8 @@ $(".list-group-item").hover(
 $(window).resize(function(){
 	if(activeGame=="Connect Four"){
 		ConnectFourRoom.resize();
+	}else if(activeGame=="Draw My Thing"){
+		DrawRoom.resize();
 	}
 })
 

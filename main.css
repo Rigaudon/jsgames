@@ -708,38 +708,63 @@ a.disabled:active{
 	height:50px;
 }
 
-#drawcanvas{
-	background-color: white;
-	margin-top:3vw;
+#drawcanvas, #toplayer{
 	border: 20px solid #222222;
 	border-radius: 35px;
 }
 
+#drawcanvas{
+	background-color: white;
+}
+
+#toplayer{
+	position:absolute;
+	cursor:none;
+}
+
 #drawColor{
-	font-size:18px;
-	width:90px;
-	height:90px;
-	border-radius:15px;
-	border:5px groove white;
+	font-size:20px;
+	width:95%;
+	height:20px;
+	border-radius:5px;
+	border:1px groove white;
 	outline:none;
-	float:right;
 }
 
 #drawSlider{
-	width:450px;
-	height:15px;
-	float:left;
-	font-size:24px;
-	margin-top:18px;
+	width:95%;
+	height:11px;
+	font-size:20px;
+	margin-top:15px;
+	margin-left:auto;
+	margin-right:auto;
 }
 
 #drawOptions{
-	width:600px;
+	width:20%;
 	margin-left:auto;
 	margin-right:auto;
 	font-size:40px;
-	height:120px;
 	border-radius: 20px;
 	border:15px solid #222222;
-	background-color: #282828;
+	background-color: #333333;
+	position:absolute;
+	left:85%;
+	top:0;
+	height:500px;
 }
+
+#drawToolsDiv button{
+
+}
+
+#drawToolsDiv button img{
+	width:25px;
+	height:25px;
+}
+
+#drawOptions .option-label{
+	font-size:25px;
+	margin-top:30px;
+}
+
