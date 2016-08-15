@@ -20,6 +20,7 @@ var playernum = null;
 var emotesEnabled = true;
 var soundsEnabled = false;
 var emoteList = [];
+var roomStatus = null;
 
 function preloadImages(imgarr){
 	for (var i = 0; i < imgarr.length; i++) {
@@ -34,7 +35,6 @@ function preloadImages(imgarr){
       	return $(
         '<audio autoplay="autoplay" style="display:none;">'
 	          + '<source src="' + arguments[0] + '.mp3" />'
-	          + '<source src="' + arguments[0] + '.ogg" />'
 	          + '<embed src="' + arguments[0] + '.mp3" hidden="true" autostart="true" loop="false" class="playSound" />'
 	        + '</audio>'
 	      ).appendTo('body');
@@ -226,14 +226,12 @@ UnoRoom.leaveRoom = function(){
 	activeGame = null;
 	currRoom = null;
 	playernum = null;
+	roomStatus = null;
 }
 UnoRoom.disableUnoBtn = function(){
 	UnoRoom.uno_btn_disabled = true;
 	$("#uno_btn").addClass('disabled');
-	console.log("HI");
-	setTimeout(function(){
-		UnoRoom.enableUnoBtn();
-	}, 4000);
+	console.log("HI");;
 }
 UnoRoom.enableUnoBtn = function(){
 	$("#uno_btn").removeClass('disabled');
@@ -352,11 +350,13 @@ UnoRoom.gameMessage = function(msg){
 			UnoRoom.myTurn = true;
 			$(".uno_active").removeClass("uno_active");
 			$(".uno_hand_row").addClass("uno_active");
+			UnoRoom.enableUnoBtn();
 		break;
 		case 'opponentTurn':
 			UnoRoom.myTurn = false;
 			$(".uno_active").removeClass("uno_active");
 			$("#uno_op_"+r.player).addClass("uno_active");
+			UnoRoom.enableUnoBtn();
 		break;
 		case 'makeMove':
 			var imgname;
@@ -465,6 +465,7 @@ ConnectFourRoom.leaveRoom = function(){
 	activeGame = null;
 	currRoom = null;
 	playernum = null;
+	roomStatus = null;
 }
 ConnectFourRoom.resize = function(){
 	var setTo = $(".c4row").height();
@@ -726,20 +727,22 @@ function getPlayerNum(roomid){
 }
 
 var DrawRoom = Object();
-DrawRoom.myTurn = true; //changeme
-DrawRoom.context = null;
-DrawRoom.canvas = null;
-DrawRoom.topContext = null;
-DrawRoom.selectedColor = "#000000";
-DrawRoom.brushSize = 8;
-DrawRoom.transactions = Array();
-DrawRoom.currTransaction = Object();
-DrawRoom.tool = "line";
+DrawRoom.myTurn;
+DrawRoom.context;
+DrawRoom.canvas;
+DrawRoom.topContext;
+DrawRoom.selectedColor;
+DrawRoom.brushSize;
+DrawRoom.transactions;
+DrawRoom.currTransaction;
+DrawRoom.tool;
+DrawRoom.playerScores;
+DrawRoom.numPlayers;
 
 DrawRoom.joinedRoom = function(){
 	$("#gameroombox").css('left', '-50%');
 	$("#create_room_button").hide();
-	$("#back_to_lobby").show();
+	//$("#back_to_lobby").show();
 	$("#active_game_div").css('width', '85%');
 	$("#active_game_div").css('left', '32.5%');
 	$("#room_info").css('left', '77.5%');
@@ -748,12 +751,12 @@ DrawRoom.joinedRoom = function(){
 	getRoomInfo(currRoom);
 	$("#onlinebox").css('left', '0%');
 	$("#chatmain").css('left', '125%');
-	$("#creategamebox").css('left', '50%');
+	$("#creategamebox").css('top', '105%');
 	activeGame = "Draw My Thing";
 }
 DrawRoom.leaveRoom = function(){
 	$("#active_game_div").css('left', '150%');
-	$("#back_to_lobby").hide();
+	//$("#back_to_lobby").hide();
 	$("#create_room_button").show();
 	$("#gameroombox").css('left', '42.5%');
 	$("#room_info").css('top', '105%');
@@ -763,15 +766,35 @@ DrawRoom.leaveRoom = function(){
 	$("#onlinebox").css('left', '25%');
 	$("#chatmain").css('left', '105%');
 	$("#active_game_div").css('width', '60%');
-	$("#creategamebox").css('left', '47.25%');
+	$("#creategamebox").css('top', '87%');
 	socket.emit('leaveRoom', currRoom);
 	activeGame = null;
 	currRoom = null;
 	playernum = null;
+	roomStatus = null;
+	DrawRoom.myTurn = false;
+	DrawRoom.context = null;
+	DrawRoom.canvas = null;
+	DrawRoom.topContext = null;
+	DrawRoom.selectedColor = "#000000";
+	DrawRoom.brushSize = 8;
+	DrawRoom.transactions = Array();
+	DrawRoom.currTransaction = Object();
+	DrawRoom.tool = "line";
 }
-DrawRoom.buildRoom = function(received){
+DrawRoom.buildRoom = function(received, players){
 	var active = $("#active_game_div");
 	active.empty();
+	DrawRoom.myTurn = false; 
+	DrawRoom.context = null;
+	DrawRoom.canvas = null;
+	DrawRoom.topContext = null;
+	DrawRoom.selectedColor = "#000000";
+	DrawRoom.brushSize = 8;
+	DrawRoom.transactions = Array();
+	DrawRoom.currTransaction = Object();
+	DrawRoom.tool = "line";
+	DrawRoom.numPlayers = parseInt(received.maxPlayers);
 	var border = 20; // changeme
 
 	var drawingCanvas = $("<canvas id='drawcanvas' width='1000' height='800' />");
@@ -855,6 +878,9 @@ DrawRoom.buildRoom = function(received){
 
 	var brushTool = $("<button type='button' class='btn btn-default'><img src='res/dmt/brush.png'/></button>");
 	brushTool.click(function(e){
+		if(!DrawRoom.myTurn){
+			return false;
+		}
 		DrawRoom.tool = "line";
 		topLayer.css('cursor', 'none');
 	});
@@ -862,6 +888,9 @@ DrawRoom.buildRoom = function(received){
 
 	var fillTool = $("<button type='button' class='btn btn-default'><img src='res/dmt/fill.png'/></button>");
 	fillTool.click(function(e){
+		if(!DrawRoom.myTurn){
+			return false;
+		}
 		DrawRoom.tool = "fill";
 		DrawRoom.topContext.clearRect(0, 0, DrawRoom.topContext.canvas.width, DrawRoom.topContext.canvas.height);		
 		topLayer.css('cursor', 'url("res/dmt/fillsmall.png"), default');
@@ -870,6 +899,9 @@ DrawRoom.buildRoom = function(received){
 
 	var eraserTool = $("<button type='button' class='btn btn-default'><img src='res/dmt/eraser.png'/></button>");
 	eraserTool.click(function(e){
+		if(!DrawRoom.myTurn){
+			return false;
+		}
 		DrawRoom.tool = "eraser";
 		DrawRoom.topContext.clearRect(0, 0, DrawRoom.topContext.canvas.width, DrawRoom.topContext.canvas.height);		
 		topLayer.css('cursor', 'url("res/dmt/erasersmall.png"), default');
@@ -882,6 +914,9 @@ DrawRoom.buildRoom = function(received){
 	var tools2 = $("<div class='btn-group'>");
 	var undoTool = $("<button type='button' class='btn btn-default'><img src='res/dmt/undo.png'/></button>");
 	undoTool.click(function(e){
+		if(!DrawRoom.myTurn){
+			return false;
+		}
 		DrawRoom.topContext.clearRect(0, 0, DrawRoom.topContext.canvas.width, DrawRoom.topContext.canvas.height);		
 		DrawRoom.undoLastTransaction();
 	});
@@ -889,6 +924,9 @@ DrawRoom.buildRoom = function(received){
 
 	var clearTool = $("<button type='button' class='btn btn-default'><img src='res/dmt/clear.png'/></button>");
 	clearTool.click(function(e){
+		if(!DrawRoom.myTurn){
+			return false;
+		}
 		DrawRoom.topContext.clearRect(0, 0, DrawRoom.topContext.canvas.width, DrawRoom.topContext.canvas.height);
 		DrawRoom.clearCanvas();
 	});
@@ -905,8 +943,32 @@ DrawRoom.buildRoom = function(received){
 	var colorPicker = $("<input id='drawColor' value='"+DrawRoom.selectedColor+"' type='button' />");
 	optionsBody.append(colorPicker);
 
+	var backBtn = $("<button role='button'><span class='glyphicon glyphicon-home' style='float:left' aria-hidden='true'></span>Exit Game Room</button>");
+	backBtn.css('width', '90%');
+	backBtn.css('color', 'black');
+	backBtn.css('margin-top', '30px');
+	backBtn.css('font-size', '25px');
+	backBtn.css('padding-top', '8px');
+	backBtn.click(function(){
+		$("#back_to_lobby").click();
+	});
+	optionsBody.append(backBtn);
+
 	optionsDiv.append(optionsBody);
 	active.append(optionsDiv);
+
+	var playerListDiv = $("<div class='panel panel-default drawplayers'>");
+	playerListDiv.append($("<div class='panel-heading'>").text("Players"));
+	playerListDiv.append($("<div class='panel-body' id='drawPlayers'>").css('height', '80%'));
+	active.append(playerListDiv);
+
+	var answerDiv = $("<div class='panel panel-default drawguesses'>");
+	answerDiv.append($("<div class='panel-heading'>").text("Guesses"));
+	var guessesChat = $("<div id='drawGuesses' class='panel-body'>");
+	guessesChat.append($("<ul class='messageList'></ul>").css('height', '88%'));
+	guessesChat.append('<div class="input-group"><span class="input-group-addon">Guess:</span><input autocomplete="off" style="height:35px" class="form-control inputMessage" type="text" placeholder="Enter guess..."/></div>');
+	answerDiv.append(guessesChat);
+	active.append(answerDiv);
 
 	$("#drawSlider").slider({
 		max: 30,
@@ -940,6 +1002,12 @@ DrawRoom.buildRoom = function(received){
 	DrawRoom.canvas = document.getElementById("drawcanvas");
 	DrawRoom.context = DrawRoom.canvas.getContext("2d");
 	DrawRoom.topContext = document.getElementById("toplayer").getContext("2d");
+	console.log(players);
+	for(var i=0; i<players.length; i++){
+		if(players[i]){
+			DrawRoom.addPlayer(players[i], i);
+		}
+	}
 
 	setTimeout(function(){ DrawRoom.resize(); }, 1000);
 }
@@ -1072,7 +1140,7 @@ DrawRoom.doFill = function(transaction){
 	DrawRoom.context.putImageData(colorLayer, 0, 0);
 }
 
-DrawRoom.redraw = function(){ //changeme
+DrawRoom.redraw = function(){ 
 	if(!DrawRoom.context || DrawRoom.transactions.length==0){
 		return false;
 	}
@@ -1130,6 +1198,78 @@ DrawRoom.drawLineTick = function(){
 	DrawRoom.context.strokeStyle = DrawRoom.currTransaction.color;
 	DrawRoom.context.lineWidth = DrawRoom.currTransaction.brushSize;
 	DrawRoom.context.stroke();
+}
+
+DrawRoom.gameMessage = function(msg){
+	var r = JSON.parse(msg);
+	if(r.id != currRoom){
+		return;
+	}
+	switch(r.message){
+		case 'playerJoin':
+		getRoomInfo(currRoom);
+		if(r.player != usrname){
+			DrawRoom.addPlayer(r.player, r.playernum);
+		}
+		break;
+		case 'playerLeave':
+		DrawRoom.removePlayer(r.playerid);
+		break;
+		case 'gameStart':
+		DrawRoom.resetScores();
+		DrawRoom.calculateRanks();
+		break;
+		case 'yourTurn':
+
+		break;
+		case 'opponentTurn':
+		//r.player
+		break;
+	}
+}
+
+DrawRoom.resetScores = function(){
+	DrawRoom.playerScores = Array();
+	for(var i=0; i<DrawRoom.numPlayers; i++){
+		DrawRoom.playerScores[i] = 0;
+	}
+	$(".drawpoints").each(function(){
+		$(this).text("0");
+	});
+}
+
+DrawRoom.calculateRanks = function(){
+	var toSort = Array();
+	$(".drawpoints").each(function(){
+		toSort.push([parseInt($(this).text()), $(this).parent().attr('id')]);
+	});
+	toSort.sort(function(a, b){ return a[1] < b[1] });
+	var temp = Array();
+	for(var i=0; i<toSort.length; i++){
+		$("#"+toSort[i][1]+" .drawrank").text((i+1)+".");
+		temp.push($("#"+toSort[i][1]));
+	}
+	$("#drawPlayers").empty();
+	
+	for(var i=0; i<temp.length; i++){
+		$("#drawPlayers").append(temp[i]);
+	}
+}	
+
+DrawRoom.addPlayer = function(playername, playernum){
+	var appendTo = $("#drawPlayers");
+	var newPlayerDiv = $("<div class='drawplayer' id='drawplayer"+playernum+"'>");
+	newPlayerDiv.append($("<span class='drawrank'>").text("#"));
+	newPlayerDiv.append($("<span class='drawname'>").text(playername));
+	newPlayerDiv.append($("<span class='drawpoints'>").text("0"));
+	appendTo.append(newPlayerDiv)
+}
+
+DrawRoom.removePlayer = function(id){
+	$("#drawplayer"+id).remove();
+	if(roomStatus == "Playing"){
+		DrawRoom.calculateRanks();
+	}
 }
 
 //Login code, moving to selection 
@@ -1251,14 +1391,15 @@ socket.on('makeRoomResponse', function(code){
 });
 
 socket.on('gameRoomCreated', function(msg){
-	var room = JSON.parse(msg);
-	console.log("New room detected: "+room.id);
-	addRoom(room);
+	//var room = JSON.parse(msg);
+	console.log("New room detected: "+msg.id);
+	//addRoom(room, true);
+	gameRooms.active++;
 });
 
 socket.on('gameRoomDeleted', function(id){
 	console.log("Room removed: "+id);
-	removeRoom(id);
+	removeRoom(id, true);
 });
 
 socket.on('allRooms', function(rooms){
@@ -1268,7 +1409,7 @@ socket.on('allRooms', function(rooms){
 	if(gameRooms.active>0){
 		for(var k in gameRooms){
 			if(typeof gameRooms[k] == "object"){
-				removeRoom(k);
+				removeRoom(k, false);
 			}
 		}
 	}
@@ -1277,7 +1418,7 @@ socket.on('allRooms', function(rooms){
 	tb.append($('<tr id="placeholder"><td colspan="6">No games to display</td></tr>'));
 	//add all new ones
 	for(var i=0;i<r.length;i++){
-		addRoom(r[i]);
+		addRoom(r[i], false);
 	}
 });
 
@@ -1298,7 +1439,7 @@ socket.on('joinRoomSuccess', function(room){
 		UnoRoom.joinedRoom();
 		break;
 		case "Draw My Thing":
-		DrawRoom.buildRoom(r.gameState);
+		DrawRoom.buildRoom(r.gameState, r.players);
 		DrawRoom.joinedRoom();
 		DrawRoom.clearCanvas();
 		break;
@@ -1323,6 +1464,8 @@ socket.on('gameMessage', function(msg){
 		ConnectFourRoom.gameMessage(msg);
 	}else if(activeGame=="Uno"){
 		UnoRoom.gameMessage(msg);
+	}else if(activeGame=="Draw My Thing"){
+		DrawRoom.gameMessage(msg);
 	}
 });
 
@@ -1336,6 +1479,7 @@ socket.on('roomInfo', function(room){
 	console.log("Received room information");
 	var received = JSON.parse(room);
 	$("#gameroomname").text(received.name+" ("+received.status+")");
+	roomStatus = received.status;
 	$("#gameroomid").text("ID: "+received.id);
 	if(received.pw==""){
 		$("#gameroompw").empty();
@@ -1347,7 +1491,7 @@ socket.on('roomInfo', function(room){
 	$("#gameroomplayers").text(received.players+" Players");
 });
 //add a room to the list of available rooms
-function addRoom(room){
+function addRoom(room, alterCount){
 	var tr = $("<tr>");
 	tr.append($("<td>").text(room.id));
 	tr.append($("<td>").text(room.name));
@@ -1366,14 +1510,16 @@ function addRoom(room){
 		tr.append($("<td>").text("Started"));
 	}
 	gameRooms[room.id] = tr;
-	gameRooms.active++;
+	if(alterCount){
+		gameRooms.active++;
+	}
 	$('#gameroomtable > tbody:last-child').append(tr);
 	$("#placeholder").hide();
 
 	function playersColor(players){
 		var td = $("<td>");
 		for(var i=0;i<players.length;i++){
-			if(players[i]){
+			if(players[i] && onlineUsers){
 				var k = onlineUsers[0].indexOf(players[i]);
 				td.append($("<span>").css('color',onlineUsers[1][k]).text(onlineUsers[0][k]+" "));		
 			}
@@ -1382,14 +1528,16 @@ function addRoom(room){
 	}
 }
 
-function removeRoom(roomId){
+function removeRoom(roomId, alterCount){
 	//remove it from list
 	if(gameRooms[roomId]==undefined){
 		return false;
 	}
 	gameRooms[roomId].remove();
-	gameRooms.active--;
-	console.log("Removing room "+roomId+". "+gameRooms.active+" are active.");
+	if(alterCount){
+		gameRooms.active--;
+	}
+	console.log(gameRooms.active+" gameroom(s) are active.");
 	if(gameRooms.active==0){
 		//$("#placeholder").css('display', 'inline');
 		$("#placeholder").show();
@@ -1515,6 +1663,7 @@ $(".colorpicker button").click(function(){
 
 $("#create_room_button").click(function(){
 	$.playSound('res/sounds/click2');
+	$("#create_room_name").val(usrname+"'s room");
 });
 
 $("#create_room_button2").click(function(){

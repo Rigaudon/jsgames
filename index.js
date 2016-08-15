@@ -125,6 +125,15 @@ gamerooms.createRoom = function(id, name, pw, type, numplayers, playersocket){
 		}
 	}
 	
+	newroom.emitToOtherPlayers = function(msg, val, who){
+		for(var i=0;i<newroom.playersockets.length;i++){
+			if(newroom.playersockets[i] && who != newroom.playersockets[i]){
+				newroom.playersockets[i].emit(msg, val);
+			}
+		}
+	}
+
+	io.emit('gameRoomCreated', JSON.stringify({id: id}));
 	//Manipulate gamestate.
 	switch(type){
 		//Includes: startGame(), nextPlayer(curr), nextTurn(), isEmpty(), makeMove(userSocket, move), checkVictory(board), reset(), playerJoin(userSocket)
@@ -900,13 +909,12 @@ gamerooms.createRoom = function(id, name, pw, type, numplayers, playersocket){
 			var drawroom = newroom;
 			drawroom.gameState.activePlayers = 0;
 			drawroom.gameState.status = "Waiting for Players";
-			drawroom.activePlayers = 0;
-
+			drawroom.gameState.maxPlayers = drawroom.numPlayers;
 			drawroom.playerJoin = function(userSocket){
 				var room = drawroom;
 				
-				if(room.playersockets.indexOf(userSocket)==-1){
-					if(room.activePlayers==room.numPlayers){
+				if(room.playersockets.indexOf(userSocket)==-1){ //user is not in the room
+					if(room.gameState.activePlayers==room.numPlayers){ //the room is full
 						userSocket.emit('joinRoomFailure', 'Room is full');
 						return false;
 					}
@@ -918,7 +926,8 @@ gamerooms.createRoom = function(id, name, pw, type, numplayers, playersocket){
 							break;
 						}
 					}
-					
+					room.gameState.activePlayers ++;
+
 					var toEmit = {};
 					toEmit["id"] = room.id;
 					toEmit["name"] = room.name;
@@ -936,11 +945,13 @@ gamerooms.createRoom = function(id, name, pw, type, numplayers, playersocket){
 					toEmit.message = 'playerJoin';
 					toEmit.id = room.id;
 					toEmit.player = n;
-					room.emitToPlayers('gameMessage', JSON.stringify(toEmit));
-					
-					if(room.gameState.status=="Playing"){
+					toEmit.playernum = l;
+					room.emitToPlayers('gameMessage', JSON.stringify(toEmit), userSocket);
+					if(room.gameState.activePlayers == room.numPlayers){
+						room.gameState.status = "Playing"
 						room.startGame();
 					}
+					
 					return true;
 				}else{
 					userSocket.emit('joinRoomFailure', 'Already in room');
@@ -957,6 +968,7 @@ gamerooms.createRoom = function(id, name, pw, type, numplayers, playersocket){
 				}
 				drawroom.players[i] = null;
 				drawroom.playersockets[i] = null;
+				drawroom.gameState.activePlayers--;
 				console.log("Room "+drawroom.id+": User "+n+" left the room");
 				userSocket.emit('leaveStatus', 1);
 				if(drawroom.isEmpty()){
@@ -966,19 +978,50 @@ gamerooms.createRoom = function(id, name, pw, type, numplayers, playersocket){
 					toEmit.message = 'playerLeave';
 					toEmit.id = drawroom.id;
 					toEmit.playerName = n;
+					toEmit.playerid = i;
 					drawroom.emitToPlayers('gameMessage', JSON.stringify(toEmit));
 				}
 				gamerooms.broadcastAllRooms();
 			}
 
 			drawroom.isEmpty = function(){
-				for(var i=0;i<drawroom.playersockets.length;i++){
-					if(drawroom.playersockets[i]!=null){
-						return false;
-					}
-				}
-				return true;
+				return drawroom.gameState.activePlayers == 0;
 			}
+
+			drawroom.startGame = function(){
+				drawroom.gameState.status = "Playing";
+				console.log("Game room "+drawroom.id+" is starting.");
+				drawroom.gameState.playerTurn = -1; // nextTurn will increment by 1
+				var toEmit = {message: "gameStart", id: drawroom.id};
+				drawroom.emitToPlayers('gameMessage', JSON.stringify(toEmit));
+				gamerooms.broadcastAllRooms();
+				drawroom.nextTurn();
+			}
+
+			drawroom.nextTurn = function(){
+				drawroom.nextPlayer();
+				var toEmit = {message: 'yourTurn', id: drawroom.id};
+				drawroom.playersockets[drawroom.gameState.playerTurn].emit('gameMessage', JSON.stringify(toEmit));
+				toEmit.message = 'opponentTurn';
+				toEmit.player = drawRoom.gameState.playerTurn;
+				drawroom.emitToOtherPlayers('gameMessage', JSON.stringify(toEmit), drawroom.playersockets[drawroom.gameState.playerTurn]);
+			}
+
+			drawroom.nextPlayer = function(){
+				if(drawroom.isEmpty()){
+					return false;
+				}
+				var curr = drawroom.gameState.playerTurn;
+				if(curr+1 >= drawroom.players.length){
+					drawroom.gameState.playerTurn = 0;
+				}else{
+					drawroom.gameState.playerTurn++;
+				}
+				if(!drawroom.players[drawroom.gameState.playerTurn]){
+					drawroom.nextPlayer();
+				}
+			}
+
 		break;
 	}
 	

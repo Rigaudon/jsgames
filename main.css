@@ -152,7 +152,7 @@ body {
 	bottom:0;
 }
 
-#messages { 
+.messageList { 
 	overflow-y:scroll; 
 	color:black;
 	font-size:18px;
@@ -164,18 +164,18 @@ body {
 	background-color:white;
 	line-height:1.5em;
 }
-#messages span {
+.messageList span {
 	word-wrap:break-word; 
 	margin:0;
 	border:0px;
 }
-#messages .subtle{
+.messageList .subtle{
 	text-align:center;
 	font-style:italic;
 	color:#BBBBBB;
 }
 
-#chatbox_main_msg{ 
+.inputMessage{ 
 	width:100%; 
 	color:black; 
 	margin:0px; 
@@ -411,6 +411,10 @@ body {
 #settingsModal .modal-header, #gameModal .modal-header{
 	border-bottom:3px solid #666666;
 }
+#settingsModal .row{
+	padding-top: 4px;
+	padding-bottom: 4px;
+}
 #gameModal .input-group-lg{
 	width:80%;
 	margin:20px;
@@ -431,6 +435,8 @@ body {
     -o-transition: 0.5s;
     -webkit-transition: 0.5s;
 	transition:0.5s;
+	overflow:hidden;
+	white-space: nowrap;
 }
 #room_info .panel-heading{
 	font-size:25px;
@@ -708,9 +714,26 @@ a.disabled:active{
 	height:50px;
 }
 
-#drawcanvas, #toplayer{
-	border: 20px solid #222222;
-	border-radius: 35px;
+#drawcanvas, #toplayer, #drawOptions, .drawplayers, .drawguesses{
+	border: 15px solid #222222;
+	border-radius: 20px;
+}
+
+.drawplayers, .drawguesses{
+	position:absolute;
+	left:-5%;
+	font-size:30px;
+	width:20%;
+}
+
+.drawplayers{
+	top:0;
+	height:45%;
+}
+
+.drawguesses{
+	top:45%;
+	height:60%;
 }
 
 #drawcanvas{
@@ -745,8 +768,6 @@ a.disabled:active{
 	margin-left:auto;
 	margin-right:auto;
 	font-size:40px;
-	border-radius: 20px;
-	border:15px solid #222222;
 	background-color: #333333;
 	position:absolute;
 	left:85%;
@@ -768,3 +789,35 @@ a.disabled:active{
 	margin-top:30px;
 }
 
+.drawplayer{
+	background-color: #DDDDDD;
+	border-bottom: 2px solid black;
+	border-top: 2px solid black;
+	height:40px;
+	text-align: center;
+}
+
+.drawplayer span{
+	padding-top: 8px;
+	height:100%;
+}
+
+.drawname{
+	float:left;
+	width:70%;
+	background-color:#666666;
+}
+
+.drawrank{
+	float:left;
+	width:10%;
+	background-color:#333333;
+	color:#FF9900;
+}
+
+.drawpoints{
+	float:right;
+	width:20%;
+	background-color:#333333;
+	color:#FF9900;
+}
