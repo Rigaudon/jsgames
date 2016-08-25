@@ -972,6 +972,7 @@ gamerooms.createRoom = function(id, name, pw, type, numplayers, playersocket){
 				console.log("Room "+drawroom.id+": User "+n+" left the room");
 				userSocket.emit('leaveStatus', 1);
 				if(drawroom.isEmpty()){
+					drawroom.gameState.status = "Empty";
 					gamerooms.deleteRoom(drawroom.id);
 				}else{
 					var toEmit = Object();
@@ -998,13 +999,24 @@ gamerooms.createRoom = function(id, name, pw, type, numplayers, playersocket){
 				drawroom.nextTurn();
 			}
 
+			drawroom.gameState.turnTime = 65;
+			drawroom.gameState.turnTimeout = undefined;
 			drawroom.nextTurn = function(){
+				if(drawroom.gameState.status != "Playing"){
+					clearTimeout(drawroom.gameState.turnTimeout);
+					return;
+				}
 				drawroom.nextPlayer();
-				var toEmit = {message: 'yourTurn', id: drawroom.id};
+				var timeStart = (new Date).getTime();
+
+				var toEmit = {message: 'yourTurn', id: drawroom.id, time: timeStart};
+				toEmit.player = drawroom.gameState.playerTurn;
 				drawroom.playersockets[drawroom.gameState.playerTurn].emit('gameMessage', JSON.stringify(toEmit));
 				toEmit.message = 'opponentTurn';
-				toEmit.player = drawRoom.gameState.playerTurn;
 				drawroom.emitToOtherPlayers('gameMessage', JSON.stringify(toEmit), drawroom.playersockets[drawroom.gameState.playerTurn]);
+				drawroom.gameState.turnTimeout = setTimeout(function(){
+					drawroom.nextTurn();
+				}, drawroom.gameState.turnTime * 1000);
 			}
 
 			drawroom.nextPlayer = function(){

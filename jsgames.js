@@ -738,6 +738,11 @@ DrawRoom.currTransaction;
 DrawRoom.tool;
 DrawRoom.playerScores;
 DrawRoom.numPlayers;
+DrawRoom.countdown = 5;
+DrawRoom.turnTime = 60;
+DrawRoom.timersize = 40;
+DrawRoom.timerPositionOffset = 10;
+DrawRoom.timerid;
 
 DrawRoom.joinedRoom = function(){
 	$("#gameroombox").css('left', '-50%');
@@ -1218,9 +1223,10 @@ DrawRoom.gameMessage = function(msg){
 		case 'gameStart':
 		DrawRoom.resetScores();
 		DrawRoom.calculateRanks();
+//		DrawRoom.drawCountdown(DrawRoom.countdown);
 		break;
 		case 'yourTurn':
-
+		
 		break;
 		case 'opponentTurn':
 		//r.player
@@ -1270,6 +1276,70 @@ DrawRoom.removePlayer = function(id){
 	if(roomStatus == "Playing"){
 		DrawRoom.calculateRanks();
 	}
+}
+
+DrawRoom.drawCountdown = function(remaining){
+	var context = DrawRoom.topContext;
+	var width = context.canvas.width;
+	var height = context.canvas.height;
+	context.clearRect(0, 0, width, height);
+		//context.clearCanvas();
+		if(remaining == 0){
+			DrawRoom.drawTimer(DrawRoom.turnTime);
+			return;
+		}
+		context.font = width/20 + "px Verdana";
+		context.textAlign = "center";
+		context.fillStyle = "black";
+		context.fillText("Player 1 is drawing in", width/2, height/2 - height/8);
+		context.font = width/10 + "px Arial";
+		context.fillText(remaining, width/2, height/2);
+		setTimeout(function(){
+				DrawRoom.drawCountdown(remaining-1);
+		}, 1000);
+}
+
+DrawRoom.drawTimer = function(remaining){
+	var context = DrawRoom.topContext;
+	var width = context.canvas.width;
+	var height = context.canvas.height;
+	
+	//top right
+	//var center = [width - DrawRoom.timerPositionOffset - DrawRoom.timersize, DrawRoom.timersize + DrawRoom.timerPositionOffset];
+	//top center
+	var center = [width/2, DrawRoom.timersize + DrawRoom.timerPositionOffset];
+	context.clearRect(center[0] - DrawRoom.timersize, DrawRoom.timerPositionOffset, center[0] + DrawRoom.timersize, center[1] + DrawRoom.timersize);
+
+	if(remaining == 0){
+		return;
+	}
+
+	context.beginPath();
+	context.arc(center[0], center[1], DrawRoom.timersize-1, 0, 2*Math.PI);
+	context.closePath();
+	context.fillStyle = "#DDDDDD";
+	context.fill();
+
+	context.beginPath();
+	context.moveTo(center[0], center[1]);
+	context.lineTo(center[0], center[1] - DrawRoom.timersize);
+	context.arc(center[0], center[1], DrawRoom.timersize, Math.PI*1.5, remaining/DrawRoom.turnTime * 2*Math.PI + Math.PI*1.5);
+	context.closePath();
+	context.fillStyle = "#80B3FF";
+	context.fill();
+
+	context.font = "bold "+(DrawRoom.timersize/1.5) + "px courier new";
+	context.textAlign = "center";
+	if(remaining <= 10){
+		context.fillStyle = "red";
+	}else{
+		context.fillStyle = "black";
+	}
+	context.fillText(remaining, center[0], center[1]+DrawRoom.timersize/5);
+
+	DrawRoom.timerid = setTimeout(function(){
+		DrawRoom.drawTimer(remaining-1);
+	}, 1000);
 }
 
 //Login code, moving to selection 
