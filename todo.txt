@@ -12,8 +12,9 @@ Move code into modular chunks (client + server)
 Add multiple chat rooms and/or PMs (client + server)
 
 Draw My Thing functionality:
--detecting ties
 -restart game
+-custom word lists
+sounds
 
 Uno functionality:
 -restart game
@@ -23,3 +24,5 @@ Chat functionality:
 -fix twitch emotes
 -linkify
 -timestamps
+
+Settings logged in as

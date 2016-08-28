@@ -819,6 +819,10 @@ a.disabled:active{
 	width:70%;
 	background-color:#666666;
 	font-size:25px;
+	-moz-transition: 0.5s;
+    -o-transition: 0.5s;
+    -webkit-transition: 0.5s;
+	transition: 0.5s;
 }
 
 .drawrank{

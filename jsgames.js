@@ -796,7 +796,7 @@ DrawRoom.buildRoom = function(received, players){
 	DrawRoom.canvas = null;
 	DrawRoom.topContext = null;
 	DrawRoom.selectedColor = "#000000";
-	DrawRoom.brushSize = 4;
+	DrawRoom.brushSize = 6;
 	DrawRoom.transactions = Array();
 	DrawRoom.currTransaction = Object();
 	DrawRoom.tool = "line";
@@ -1122,8 +1122,18 @@ DrawRoom.drawPreviewBrush = function(x, y){
 	if(!DrawRoom.topContext){
 		return false;
 	}
-	
 	DrawRoom.topContext.clearRect(0, 0, DrawRoom.topContext.canvas.width, DrawRoom.topContext.canvas.height);		
+	
+	//Add "stroke" effect
+	DrawRoom.topContext.beginPath();
+	DrawRoom.topContext.moveTo(x-1, y);
+	DrawRoom.topContext.lineJoin = "round";
+	DrawRoom.topContext.lineTo(x, y);
+	DrawRoom.topContext.closePath();
+	DrawRoom.topContext.strokeStyle = "black";
+	DrawRoom.topContext.lineWidth = DrawRoom.brushSize + 2;
+	DrawRoom.topContext.stroke();
+
 	DrawRoom.topContext.beginPath();
 	DrawRoom.topContext.moveTo(x-1, y);
 	DrawRoom.topContext.lineJoin = "round";
@@ -1145,7 +1155,7 @@ DrawRoom.clearCanvas = function(){
 DrawRoom.clearTopCanvas = function(){
 	var tmp = DrawRoom.topContext.fillStyle;
 	DrawRoom.topContext.fillStyle = "white";
-	DrawRoom.topContext.fillRect(0, 0, DrawRoom.topContext.canvas.width, DrawRoom.topContext.canvas.height);
+	DrawRoom.topContext.clearRect(0, 0, DrawRoom.topContext.canvas.width, DrawRoom.topContext.canvas.height);
 	DrawRoom.topContext.fillStyle = tmp;
 }
 
@@ -1321,6 +1331,7 @@ DrawRoom.gameMessage = function(msg){
 			DrawRoom.resetGuesses();
 			$("#drawguess").prop('disabled', true);
 			$("#drawOptions").css('left', '85%');
+			DrawRoom.changeTurn(r.player);
 		break;
 		case 'opponentTurn':
 			DrawRoom.drawCountdown(DrawRoom.countdown, r.time, r.playerName);
@@ -1329,6 +1340,7 @@ DrawRoom.gameMessage = function(msg){
 			DrawRoom.resetGuesses();
 			$("#drawOptions").css('left', '110%');
 			DrawRoom.myTurn = false;
+			DrawRoom.changeTurn(r.player);
 		break;
 		case "makeGuess":
 			DrawRoom.addGuess(r);
@@ -1341,18 +1353,49 @@ DrawRoom.gameMessage = function(msg){
 		break;
 		case "victory":
 			DrawRoom.myTurn = false;
+			clearTimeout(DrawRoom.timerid);
 			DrawRoom.clearCanvas();
 			DrawRoom.clearTopCanvas();
 			DrawRoom.clearOverlayCanvas();
 			DrawRoom.resetGuesses();
-			DrawRoom.drawVictory(r.player);
+			DrawRoom.drawVictory(r.players);
 			$("#overlaylayer").css('cursor', 'auto');
 			$("#drawOptions").css('left', '85%');
+			DrawRoom.changeTurn(-1);
+		break;
+		case "revealWord":
+			$("#drawguess").prop('disabled', true);
+			DrawRoom.revealWord(r.word);
 		break;
 	}
 }
 
-DrawRoom.drawVictory = function(player){
+DrawRoom.changeTurn = function(player){
+	DrawRoom.clearTopCanvas();
+	for(var i=0; i<DrawRoom.numPlayers; i++){
+		var tmp = $("#drawplayer"+i+" .drawname");
+		if(i==player){
+			tmp.css('background-color', '#87CEEB');
+			tmp.css('color', 'black');
+			tmp.css('font-weight', 'bold');
+		}else{
+			tmp.css('background-color', '#666666');
+			tmp.css('color', 'white');
+			tmp.css('font-weight', 'normal');
+		}
+	}
+}
+
+DrawRoom.revealWord = function(word){
+	clearTimeout(DrawRoom.timerid);
+	DrawRoom.myTurn = false;
+	DrawRoom.clearOverlayCanvas();
+	DrawRoom.drawWord(word);
+	//changme to disable on server as well
+	$("#drawguess").prop('disabled', true);
+}
+
+DrawRoom.drawVictory = function(players){
 	var context = DrawRoom.overlayContext;
 	var width = context.canvas.width;
 	var height = context.canvas.height;
@@ -1361,9 +1404,18 @@ DrawRoom.drawVictory = function(player){
 	context.textAlign = "center";
 	context.fillStyle = "black";
 	context.lineWidth = 7;
-	context.strokeText(player+" won!", center[0], center[1]);
+	var text = players[0];
+	for(var i=1; i<players.length; i++){
+		if(i==players.length-1){
+			text += " and "+players[i];
+		}else{
+			text += ", " + players[i];
+		}
+	}
+	text+= " won!";
+	context.strokeText(text, center[0], center[1]);
 	context.fillStyle = "white";
-	context.fillText(player+" won!", center[0], center[1]);
+	context.fillText(text, center[0], center[1]);
 }
 
 DrawRoom.processEvent = function(received){
@@ -1402,8 +1454,17 @@ DrawRoom.processEvent = function(received){
 }
 DrawRoom.tempqX = [];
 DrawRoom.tempqY = [];
-DrawRoom.interval = 1;
+DrawRoom.interval = 2;
+DrawRoom.drawBlocking = false;
 DrawRoom.drawLine = function(x, y, color, size){
+	if(DrawRoom.drawBlocking){
+		setTimeout(function(){
+			DrawRoom.drawLine(x, y, color, size);
+		}, 400);
+	}else{
+		DrawRoom.drawBlocking = true;
+	}
+
 	if(!DrawRoom.context){
 		return false;
 	}
@@ -1414,12 +1475,21 @@ DrawRoom.drawLine = function(x, y, color, size){
 			DrawRoom.drawNextTick(color, size);
 		}, i*DrawRoom.interval);
 	}
+	setTimeout(function(){
+		DrawRoom.drawBlocking = false;
+	}, i*DrawRoom.interval+200);
 }
 
 DrawRoom.drawNextTick = function(color, size){
 	if(DrawRoom.tempqX.length<2){
 		DrawRoom.tempqX = [];
 		DrawRoom.tempqY = [];
+		return;
+	}
+	var diff = Math.abs(DrawRoom.tempqX[0] - DrawRoom.tempqX[1]) + Math.abs(DrawRoom.tempqY[0] - DrawRoom.tempqY[1]);
+	if(diff > 50){
+		DrawRoom.tempqX.shift();
+		DrawRoom.tempqY.shift();	
 		return;
 	}
 	DrawRoom.context.lineJoin = "round";
@@ -1579,7 +1649,7 @@ DrawRoom.drawTimer = function(startTime){
 	if(remaining <= 0){
 		DrawRoom.myTurn = false;
 		$("#overlaylayer").css('cursor', 'auto');
-		DrawRoom.clearCanvas();
+		//DrawRoom.clearCanvas();
 		DrawRoom.clearTopCanvas();
 		return;
 	}
@@ -1595,7 +1665,7 @@ DrawRoom.drawTimer = function(startTime){
 	context.lineTo(center[0], center[1] - DrawRoom.timersize);
 	context.arc(center[0], center[1], DrawRoom.timersize, Math.PI*1.5, remaining/DrawRoom.turnTime * 2*Math.PI + Math.PI*1.5);
 	context.closePath();
-	context.fillStyle = "#80B3FF";
+	context.fillStyle = "#87CEEB";
 	context.fill();
 
 	context.font = "bold "+(DrawRoom.timersize/1.5) + "px adobe clean";

@@ -975,6 +975,9 @@ gamerooms.createRoom = function(id, name, pw, type, numplayers, playersocket){
 			}
 
 			drawroom.makeMove = function(userSocket, received){
+				if(drawroom.gameState.status != "Playing"){
+					return;
+				}
 				var playernum = drawroom.playersockets.indexOf(userSocket);
 				if(playernum == -1){
 					return false;
@@ -1010,7 +1013,7 @@ gamerooms.createRoom = function(id, name, pw, type, numplayers, playersocket){
 					if(drawroom.gameState.guessed.length == drawroom.gameState.activePlayers-1){
 						//everyone guessed the word
 						clearTimeout(drawroom.gameState.turnTimeout);
-						drawroom.nextTurn();
+						drawroom.revealWord();
 					}
 				}else if(received.event == "draw"){
 					if(drawroom.gameState.playerTurn != playernum){
@@ -1047,6 +1050,18 @@ gamerooms.createRoom = function(id, name, pw, type, numplayers, playersocket){
 
 					drawroom.emitToOtherPlayers('gameMessage', JSON.stringify(toEmit), userSocket);
 				}
+			}
+
+			drawroom.revealTime = 5;
+			drawroom.revealWord = function(){
+				var toEmit = Object();
+				toEmit.id = drawroom.id;
+				toEmit.message = "revealWord";
+				toEmit.word = drawroom.gameState.word;
+				drawroom.emitToPlayers('gameMessage', JSON.stringify(toEmit));
+				setTimeout(function(){
+					drawroom.nextTurn();
+				}, drawroom.revealTime * 1000);
 			}
 
 			drawroom.sendScores = function(){
@@ -1112,10 +1127,15 @@ gamerooms.createRoom = function(id, name, pw, type, numplayers, playersocket){
 					var toEmit = Object();
 					toEmit.id = drawroom.id;
 					toEmit.message = 'victory';
-					//Todo: detect tie
-					console.log(drawroom.gameState.scores);
-					console.log(drawroom.players);
-					toEmit.player = drawroom.players[drawroom.gameState.scores.indexOf(Math.max.apply(null, drawroom.gameState.scores))]; 
+
+					var maxScore = Math.max.apply(null, drawroom.gameState.scores);
+					var winners = [];
+					for(var j=0; j<drawroom.gameState.scores.length; j++){
+						if(drawroom.gameState.scores[j] == maxScore){
+							winners.push(drawroom.players[j]);
+						}
+					}
+					toEmit.players = winners; 
 					drawroom.emitToPlayers('gameMessage', JSON.stringify(toEmit));
 					return;
 				}
@@ -1128,15 +1148,17 @@ gamerooms.createRoom = function(id, name, pw, type, numplayers, playersocket){
 				drawroom.playersockets[drawroom.gameState.playerTurn].emit('gameMessage', JSON.stringify(toEmit));
 				
 				toEmit.message = 'opponentTurn';
-				toEmit.word = drawroom.makeBlanks(toEmit.word).slice(0, -1);
+				toEmit.word = drawroom.makeBlanks(toEmit.word);
 				drawroom.emitToOtherPlayers('gameMessage', JSON.stringify(toEmit), drawroom.playersockets[drawroom.gameState.playerTurn]);
 				drawroom.gameState.turnTimeout = setTimeout(function(){
-					drawroom.nextTurn();
+					drawroom.revealWord();
 				}, drawroom.gameState.turnTime * 1000);
 			}
 
 			drawroom.makeBlanks = function(word){
-				return word.replace(/[^ ]/g, "_ ");
+				var l = word.replace(/ /g, "").length;
+				word = word.replace(/ /g, "  ");
+				return word.replace(/[^ ]/g, "__ ").slice(0, -1)+" ("+l+")";
 			}
 
 			drawroom.nextPlayer = function(){
