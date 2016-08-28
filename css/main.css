@@ -107,6 +107,8 @@ body {
 	height: 100%;
 	overflow: hidden;  
 	background: repeating-linear-gradient( 135deg, #222222, #222222 50px, #282828 50px, #282828 100px );
+	min-width: 1366px;
+	min-height: 768px;
 }
 .transition-fast{
 	-moz-transition: 0.3s;
@@ -376,6 +378,9 @@ body {
 #create_room_button2{
 	/*font-size:2.1vw;*/
 }
+#create_room_button{
+	max-width: 350px;
+}
 
 #settings_btn{
 	position:absolute;
@@ -437,6 +442,8 @@ body {
 	transition:0.5s;
 	overflow:hidden;
 	white-space: nowrap;
+	min-width: 410px;
+	min-height: 140px;
 }
 #room_info .panel-heading{
 	font-size:25px;
@@ -717,7 +724,6 @@ a.disabled:active{
 #drawcanvas, #toplayer, #drawOptions, #overlaylayer, .drawplayers, .drawguesses{
 	border: 15px solid #222222;
 	border-radius: 20px;
-	
 }
 
 #drawOptions{
@@ -754,7 +760,7 @@ a.disabled:active{
 
 #toplayer, #overlaylayer{
 	position:absolute;
-	cursor:none;
+	display:none;
 }
 
 #drawColor{

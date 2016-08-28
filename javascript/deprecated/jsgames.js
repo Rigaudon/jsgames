@@ -44,6 +44,23 @@ function preloadImages(imgarr){
 
 })(jQuery);
 
+//Server com for logging in
+function attemptLogin(picked_name){
+	usrname = picked_name;
+	socket.emit('pickname', usrname);
+}
+
+//Get the room info
+function getRoomInfo(roomid){
+	//console.log("Requesting room info...");
+	socket.emit('requestRoomInfo', roomid);
+	getPlayerNum(roomid);
+}
+
+function getPlayerNum(roomid){
+	socket.emit('requestPlayerNum', roomid);
+}
+
 //Lobby Code
 var Lobby = Object();
 Lobby.build = function(){
@@ -709,22 +726,6 @@ ConnectFourRoom.victory = function(received){
 		$.playSound('res/sounds/win');
 	}, 600);	
 }
-//Server com for logging in
-function attemptLogin(picked_name){
-	usrname = picked_name;
-	socket.emit('pickname', usrname);
-}
-
-//Get the room info
-function getRoomInfo(roomid){
-	//console.log("Requesting room info...");
-	socket.emit('requestRoomInfo', roomid);
-	getPlayerNum(roomid);
-}
-
-function getPlayerNum(roomid){
-	socket.emit('requestPlayerNum', roomid);
-}
 
 var DrawRoom = Object();
 DrawRoom.myTurn;
@@ -1065,6 +1066,8 @@ DrawRoom.resize = function(){
 	$("#toplayer").css('left', p.left);
 	$("#overlaylayer").css('top', p.top);
 	$("#overlaylayer").css('left', p.left);
+	$("#overlaylayer").css('display', 'block');
+	$("#toplayer").css('display', 'block');
 }
 
 DrawRoom.killCurrentTransaction = function(){
