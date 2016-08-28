@@ -1,5 +1,6 @@
 var express = require('express');
 var app = express();
+var fs = require('fs');
 app.use(express.static(__dirname+"/"))
 var http = require('http').Server(app);
 var io = require('socket.io')(http);
@@ -66,7 +67,7 @@ clients.setColor = function(name, color){
 		clients.colors[name] = color;
 		clients.broadcastOnlineUsers();
 	}else{
-		return false
+		return false;
 	}
 }
 
@@ -910,6 +911,18 @@ gamerooms.createRoom = function(id, name, pw, type, numplayers, playersocket){
 			drawroom.gameState.activePlayers = 0;
 			drawroom.gameState.status = "Waiting for Players";
 			drawroom.gameState.maxPlayers = drawroom.numPlayers;
+			drawroom.gameState.guessed = [];
+			drawroom.gameState.scores = [];
+			drawroom.maxRounds = 2; //changeme
+			drawroom.loadWords = function(list){
+				if(!list){
+					list = "default";
+				}
+				var words = fs.readFileSync("res/dmt/"+list+".txt", "utf8");
+				drawroom.wordlist = words.split(/\r?\n/);
+				console.log("Loaded "+drawroom.wordlist.length+" words from word list "+list+".");
+
+			}
 			drawroom.playerJoin = function(userSocket){
 				var room = drawroom;
 				
@@ -927,7 +940,7 @@ gamerooms.createRoom = function(id, name, pw, type, numplayers, playersocket){
 						}
 					}
 					room.gameState.activePlayers ++;
-
+					drawroom.gameState.scores.push(0);
 					var toEmit = {};
 					toEmit["id"] = room.id;
 					toEmit["name"] = room.name;
@@ -957,6 +970,89 @@ gamerooms.createRoom = function(id, name, pw, type, numplayers, playersocket){
 					userSocket.emit('joinRoomFailure', 'Already in room');
 					return false;
 				}
+			}
+
+			drawroom.makeMove = function(userSocket, received){
+				var playernum = drawroom.playersockets.indexOf(userSocket);
+				if(playernum == -1){
+					return false;
+				}
+				if(received.event == "guess"){
+					//process guess
+					if(drawroom.gameState.playerTurn == playernum){
+						//Can't guess if you are drawing
+						return false;
+					}
+					if(drawroom.gameState.guessed.indexOf(playernum)!= -1){
+						//Can't guess if you already guessed correctly
+						return false;
+					}					
+					var toEmit = Object();
+					toEmit.id = drawroom.id;
+					toEmit.message = 'makeGuess';
+					toEmit.playernum = playernum;
+					toEmit.playername = drawroom.players[playernum];
+					toEmit.color = clients.colors[toEmit.playername];
+					if(received.value.toUpperCase() == drawroom.gameState.word.toUpperCase()){
+						//Guessed word successfully
+						toEmit.guessed = true;
+						drawroom.gameState.guessed.push(playernum);
+						drawroom.gameState.scores[playernum] += 10;
+						drawroom.gameState.scores[drawroom.gameState.playerTurn] += 5;
+						drawroom.sendScores();
+					}else{
+						toEmit.value = received.value;
+						toEmit.guessed = false;
+					}
+					drawroom.emitToPlayers('gameMessage', JSON.stringify(toEmit));
+					if(drawroom.gameState.guessed.length == drawroom.gameState.activePlayers-1){
+						//everyone guessed the word
+						clearTimeout(drawroom.gameState.turnTimeout);
+						drawroom.nextTurn();
+					}
+				}else if(received.event == "draw"){
+					if(drawroom.gameState.playerTurn != playernum){
+						//Can't draw if it's not your turn
+						return false;
+					}
+					var toEmit = Object();
+					toEmit.id = drawroom.id;
+					toEmit.message = 'drawEvent';
+
+					switch(received.type){
+					case "fill":
+						toEmit.type = received.type;
+						toEmit.x = received.x;
+						toEmit.y = received.y;
+						toEmit.color = received.color;
+					break;
+					case "undo":
+						toEmit.type = "undo";
+					break;
+					case "clear":
+						toEmit.type = "clear";
+					break;
+					case "line":
+						toEmit.type = "line";
+						toEmit.arrayX = received.arrayX;
+						toEmit.arrayY = received.arrayY;
+						toEmit.color = received.color;
+						toEmit.x = received.x;
+						toEmit.y = received.y;
+						toEmit.brushSize = received.brushSize;
+					break;
+					}
+
+					drawroom.emitToOtherPlayers('gameMessage', JSON.stringify(toEmit), userSocket);
+				}
+			}
+
+			drawroom.sendScores = function(){
+				var toEmit = Object();
+				toEmit.id = drawroom.id;
+				toEmit.message = 'scoreUpdate';
+				toEmit.scores = drawroom.gameState.scores;
+				drawroom.emitToPlayers('gameMessage', JSON.stringify(toEmit));
 			}
 
 			drawroom.playerLeave = function(userSocket){
@@ -991,6 +1087,8 @@ gamerooms.createRoom = function(id, name, pw, type, numplayers, playersocket){
 
 			drawroom.startGame = function(){
 				drawroom.gameState.status = "Playing";
+				drawroom.loadWords("default");
+				drawroom.gameState.roundsPassed = 0;
 				console.log("Game room "+drawroom.id+" is starting.");
 				drawroom.gameState.playerTurn = -1; // nextTurn will increment by 1
 				var toEmit = {message: "gameStart", id: drawroom.id};
@@ -1006,17 +1104,35 @@ gamerooms.createRoom = function(id, name, pw, type, numplayers, playersocket){
 					clearTimeout(drawroom.gameState.turnTimeout);
 					return;
 				}
-				drawroom.nextPlayer();
+				drawroom.gameState.guessed = [];
+				if(!drawroom.nextPlayer()){
+					//Game over
+					var toEmit = Object();
+					toEmit.id = drawroom.id;
+					toEmit.message = 'victory';
+					//Todo: detect tie
+					toEmit.player = drawroom.gameState.scores.indexOf(Math.max(drawroom.gameState.scores));
+					drawroom.emitToPlayers('gameMessage', JSON.stringify(toEmit));
+					return;
+				}
 				var timeStart = (new Date).getTime();
-
-				var toEmit = {message: 'yourTurn', id: drawroom.id, time: timeStart};
+				var word = drawroom.wordlist[Math.floor(Math.random()*drawroom.wordlist.length)];
+				drawroom.gameState.word = word;
+				var toEmit = {message: 'yourTurn', id: drawroom.id, time: timeStart, word: word};
 				toEmit.player = drawroom.gameState.playerTurn;
+				toEmit.playerName = drawroom.players[toEmit.player];
 				drawroom.playersockets[drawroom.gameState.playerTurn].emit('gameMessage', JSON.stringify(toEmit));
+				
 				toEmit.message = 'opponentTurn';
+				toEmit.word = drawroom.makeBlanks(toEmit.word).slice(0, -1);
 				drawroom.emitToOtherPlayers('gameMessage', JSON.stringify(toEmit), drawroom.playersockets[drawroom.gameState.playerTurn]);
 				drawroom.gameState.turnTimeout = setTimeout(function(){
 					drawroom.nextTurn();
 				}, drawroom.gameState.turnTime * 1000);
+			}
+
+			drawroom.makeBlanks = function(word){
+				return word.replace(/[^ ]/g, "_ ");
 			}
 
 			drawroom.nextPlayer = function(){
@@ -1026,11 +1142,17 @@ gamerooms.createRoom = function(id, name, pw, type, numplayers, playersocket){
 				var curr = drawroom.gameState.playerTurn;
 				if(curr+1 >= drawroom.players.length){
 					drawroom.gameState.playerTurn = 0;
+					drawroom.gameState.roundsPassed++;
+					if(drawroom.gameState.roundsPassed >= drawroom.maxRounds){
+						return false;
+					}
 				}else{
 					drawroom.gameState.playerTurn++;
 				}
 				if(!drawroom.players[drawroom.gameState.playerTurn]){
 					drawroom.nextPlayer();
+				}else{
+					return true;
 				}
 			}
 

@@ -714,9 +714,17 @@ a.disabled:active{
 	height:50px;
 }
 
-#drawcanvas, #toplayer, #drawOptions, .drawplayers, .drawguesses{
+#drawcanvas, #toplayer, #drawOptions, #overlaylayer, .drawplayers, .drawguesses{
 	border: 15px solid #222222;
 	border-radius: 20px;
+	
+}
+
+#drawOptions{
+	-moz-transition: 0.5s;
+    -o-transition: 0.5s;
+    -webkit-transition: 0.5s;
+	transition: 0.5s;
 }
 
 .drawplayers, .drawguesses{
@@ -740,7 +748,7 @@ a.disabled:active{
 	background-color: white;
 }
 
-#toplayer{
+#toplayer, #overlaylayer{
 	position:absolute;
 	cursor:none;
 }
