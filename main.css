@@ -15,7 +15,7 @@ body {
 	position: absolute;
 	width: 100%;
 	font-size: 50px;
-	font-size: 3vw;
+	/*font-size: 3vw;*/
 	text-align: center;
 	left: 150%;
 	top: 10%;
@@ -26,7 +26,7 @@ body {
 .msg{
 	display:none;
 	font-size:20px;
-	font-size:2vw;
+	/*font-size:2vw;*/
 	margin-top:40px;
 	width:50%;
 	position:absolute;
@@ -116,8 +116,8 @@ body {
 }
 #name_select {
 	left: 25%;
-	font-size:50px;
-	font-size:5vw;
+	font-size:70px;
+	/*font-size:5vw;*/
     -moz-transition: 0.5s;
     -o-transition: 0.5s;
     -webkit-transition: 0.5s;
@@ -130,7 +130,7 @@ body {
 	color:white;
 	font-family: inherit;
 	font-size:35px;
-	font-size:3.5vw;
+	/*font-size:3.5vw;*/
 	background:transparent;
 	text-align: inherit;
 	text-decoration: none;
@@ -227,14 +227,14 @@ body {
 #gameroomtable{
 	margin-top:20px;
 	font-size:20px;
-	font-size:2vw;
+	/*font-size:2vw;*/
 	border-top:2px solid white;
 }
 
 #gameroomtable th, td{
 	text-align:center;
 	font-size:16px;
-	font-size:1vw;
+	/*font-size:1vw;*/
 }
 
 #gameroomtable th:nth-child(odd){
@@ -264,7 +264,7 @@ body {
 	top:87%;
 	width:50%;
 	font-size:50px;
-	font-size:5vw;
+	/*font-size:5vw;*/
     -moz-transition: 0.5s;
     -o-transition: 0.5s;
     -webkit-transition: 0.5s;
@@ -273,7 +273,7 @@ body {
 
 #creategamebox a{
 	font-size:25px;
-	font-size:2.1vw;
+	/*font-size:2.1vw;*/
 }
 
 #joingamenum{
@@ -294,7 +294,7 @@ body {
 
 #onlinebox .text{
 	font-size:35px;
-	font-size:2.5vw;
+	/*font-size:2.5vw;*/
 	height:10%;
 }
 
@@ -304,7 +304,7 @@ body {
 
 #numonline{
 	font-size:25px;
-	font-size:1.5vw;
+	/*font-size:1.5vw;*/
 	margin-left:10px;
 }
 
@@ -316,7 +316,7 @@ body {
 
 #onlinelist span{
 	font-size:20px;
-	font-size:1.5vw;
+	/*font-size:1.5vw;*/
 	float:left;
 	margin-left:15px;
 }
@@ -374,7 +374,7 @@ body {
 	padding-top:14px;
 }
 #create_room_button2{
-	font-size:2.1vw;
+	/*font-size:2.1vw;*/
 }
 
 #settings_btn{
@@ -400,12 +400,12 @@ body {
 }
 #settingsModal .modal-title, #gameModal .modal-title{
 	font-size:40px;
-	font-size:2vw;
+	/*font-size:2vw;*/
 	text-align: center;
 }
 #settingsModal .modal-body, #gameModal .modal-body{
 	font-size:30px;
-	font-size:1.5vw;
+	/*font-size:1.5vw;*/
 	text-align: center;
 }
 #settingsModal .modal-header, #gameModal .modal-header{
@@ -440,13 +440,13 @@ body {
 }
 #room_info .panel-heading{
 	font-size:25px;
-	font-size:1.3vw;
+	/*font-size:1.3vw;*/
 	height:38%;
 }
 #room_info .panel-body{
 	color:black;
 	font-size:20px;
-	font-size:1.1vw;
+	/*font-size:1.1vw;*/
 	height:62%;
 }
 #room_info .subtle{
@@ -481,7 +481,7 @@ body {
 	margin-left:5%;
 	margin-right:5%;
 	font-size:36px;
-	font-size:2vw;
+	/*font-size:2vw;*/
 	color:white;
 	border:2px solid white;
 	border-top-left-radius: 25px;
@@ -725,6 +725,7 @@ a.disabled:active{
     -o-transition: 0.5s;
     -webkit-transition: 0.5s;
 	transition: 0.5s;
+	min-width:295px;
 }
 
 .drawplayers, .drawguesses{
@@ -732,6 +733,7 @@ a.disabled:active{
 	left:-5%;
 	font-size:30px;
 	width:20%;
+	min-width:295px;
 }
 
 .drawplayers{
@@ -742,6 +744,8 @@ a.disabled:active{
 .drawguesses{
 	top:45%;
 	height:60%;
+	max-height:500px;
+	min-height:500px;
 }
 
 #drawcanvas{
@@ -814,6 +818,7 @@ a.disabled:active{
 	float:left;
 	width:70%;
 	background-color:#666666;
+	font-size:25px;
 }
 
 .drawrank{

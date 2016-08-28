@@ -118,6 +118,9 @@ gamerooms.createRoom = function(id, name, pw, type, numplayers, playersocket){
 	newroom.gameState = Object();
 	newroom.gameState.status = "Creating Room";
 	console.log("Room "+id+" was created. Name: "+name+"; Players: "+numplayers+"; Gametype: "+type+"; Password:" +pw);
+	var toEmit = Object();
+	toEmit.id = newroom.id;
+	io.emit('gameRoomCreated', JSON.stringify(toEmit));
 	newroom.emitToPlayers = function(msg, val){
 		for(var i=0;i<newroom.playersockets.length;i++){
 			if(newroom.playersockets[i]){
@@ -134,7 +137,6 @@ gamerooms.createRoom = function(id, name, pw, type, numplayers, playersocket){
 		}
 	}
 
-	io.emit('gameRoomCreated', JSON.stringify({id: id}));
 	//Manipulate gamestate.
 	switch(type){
 		//Includes: startGame(), nextPlayer(curr), nextTurn(), isEmpty(), makeMove(userSocket, move), checkVictory(board), reset(), playerJoin(userSocket)
@@ -1350,13 +1352,6 @@ io.on('connection', function(socket){
 	});
 });
 
-//TODO:
-//Chatroom: timestamps, different chat rooms by #
-//Implement games
-//refactor ids 
-//Implement mouse tracking in game
-//Implement database
-//Make mobile version
 
 http.listen(8080, function(){
   console.log('Listening on port 8080');

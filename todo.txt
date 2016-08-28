@@ -1,0 +1,25 @@
+Make a Create Lobby function (client)
+-Move all the related functions into the build function
+
+Implement the validChars function (client + server) validStr on server
+
+Implement passwords on rooms (client + server) 
+
+Figure out color change of the color picker when pressing preset color button in DMT (client)
+
+Move code into modular chunks (client + server)
+
+Add multiple chat rooms and/or PMs (client + server)
+
+Draw My Thing functionality:
+-detecting ties
+-restart game
+
+Uno functionality:
+-restart game
+-seating order
+
+Chat functionality:
+-fix twitch emotes
+-linkify
+-timestamps

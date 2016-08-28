@@ -717,7 +717,7 @@ function attemptLogin(picked_name){
 
 //Get the room info
 function getRoomInfo(roomid){
-	console.log("Requesting room info...");
+	//console.log("Requesting room info...");
 	socket.emit('requestRoomInfo', roomid);
 	getPlayerNum(roomid);
 }
@@ -810,7 +810,7 @@ DrawRoom.buildRoom = function(received, players){
 	var topLayer = $("<canvas id='toplayer' width='1000' height='800' />");
 	var overlayLayer = $("<canvas id='overlaylayer' width='1000' height='800' />");
 	overlayLayer.mousedown(function(e){
-		if(DrawRoom.myTurn){
+		if(DrawRoom.myTurn && e.which==1){
 			var rect = DrawRoom.canvas.getBoundingClientRect(); //changeme: move so not called so much
 			var mouseX = e.clientX - rect.left - border;
 			var mouseY = e.clientY - rect.top - border;
@@ -864,6 +864,10 @@ DrawRoom.buildRoom = function(received, players){
 		if(DrawRoom.myTurn){
 			DrawRoom.killCurrentTransaction();
 		}
+	});
+
+	overlayLayer.on('contextmenu', function(){ 
+		return false; 
 	});
 
 	overlayLayer.mouseleave(function(e){
@@ -954,6 +958,22 @@ DrawRoom.buildRoom = function(received, players){
 	optionsBody.append(sizeSlider);	
 
 	optionsBody.append($("<div class='option-label'>").text("Color"));
+	var basicColors = $("<div class='btn-group' style='width:95%'>");
+	var basicColorList = ["#000000", "#FFFFFF", "#FF0000", "#FF9600", "#FFFF00", "#00FF00", "#00FFFF", "#0000FF", "#FF00FF"];
+	for(var i=0;i<basicColorList.length;i++){
+		var currColorButton = $("<button type='button' class='btn btn-default'></button>");
+		currColorButton.css('background-color', basicColorList[i]);
+		currColorButton.css('height', '25px');
+		currColorButton.css('width', (100/basicColorList.length)+"%");
+		currColorButton.attr('value', basicColorList[i]);
+		currColorButton.click(function(){
+			$("#drawColor").attr('value', this.value);
+			$("#drawColor").css('background-color', this.value);
+			DrawRoom.selectedColor = this.value;
+		});
+		basicColors.append(currColorButton);	
+	}
+	optionsBody.append(basicColors);
 	var colorPicker = $("<input id='drawColor' value='"+DrawRoom.selectedColor+"' type='button' />");
 	optionsBody.append(colorPicker);
 
@@ -1029,7 +1049,7 @@ DrawRoom.buildRoom = function(received, players){
 	DrawRoom.context = DrawRoom.canvas.getContext("2d");
 	DrawRoom.topContext = document.getElementById("toplayer").getContext("2d");
 	DrawRoom.overlayContext = document.getElementById("overlaylayer").getContext("2d");
-	console.log(players);
+//	console.log(players);
 	for(var i=0; i<players.length; i++){
 		if(players[i]){
 			DrawRoom.addPlayer(players[i], i);
@@ -1252,34 +1272,6 @@ DrawRoom.redraw = function(){
 	//DrawRoom.context.stroke();
 }
 
-DrawRoom.interval = 1;
-DrawRoom.drawLine = function(x, y, last, color, size){
-	if(!DrawRoom.context){
-		return false;
-	}
-	DrawRoom.context.beginPath();
-
-	if(last){
-		DrawRoom.context.moveTo(x[last-1], y[last-1]);
-	}else{
-		DrawRoom.context.moveTo(x[last]-1, y[last]);
-	}
-	DrawRoom.context.lineJoin = "round";
-	DrawRoom.context.lineTo(x[last], y[last]);
-	DrawRoom.context.closePath();
-	DrawRoom.context.strokeStyle = color;
-	DrawRoom.context.lineWidth = size;
-	DrawRoom.context.stroke();
-	if(last < x.length-1){
-		//DrawRoom.drawLine(x, y, last+1, color, size);
-		
-		setTimeout(function(){
-			DrawRoom.drawLine(x, y, last+1, color, size);	
-		}, DrawRoom.interval);
-		
-	}
-}
-
 DrawRoom.drawLineTick = function(){
 	if(!DrawRoom.context){
 		return false;
@@ -1403,10 +1395,44 @@ DrawRoom.processEvent = function(received){
 			DrawRoom.currTransaction.arrayY = received.arrayY;
 			DrawRoom.transactions.push(DrawRoom.currTransaction);
 			//Maybe prefer better implementation later
-			DrawRoom.drawLine(received.arrayX, received.arrayY, 0, received.color, received.brushSize);
+			DrawRoom.drawLine(received.arrayX, received.arrayY, received.color, received.brushSize);
 			DrawRoom.currTransaction = Object();
 		break;
 	}
+}
+DrawRoom.tempqX = [];
+DrawRoom.tempqY = [];
+DrawRoom.interval = 1;
+DrawRoom.drawLine = function(x, y, color, size){
+	if(!DrawRoom.context){
+		return false;
+	}
+	DrawRoom.tempqX = DrawRoom.tempqX.concat(x);
+	DrawRoom.tempqY = DrawRoom.tempqY.concat(y);
+	for(var i=0; i<DrawRoom.tempqX.length; i++){
+		setTimeout(function(){
+			DrawRoom.drawNextTick(color, size);
+		}, i*DrawRoom.interval);
+	}
+}
+
+DrawRoom.drawNextTick = function(color, size){
+	if(DrawRoom.tempqX.length<2){
+		DrawRoom.tempqX = [];
+		DrawRoom.tempqY = [];
+		return;
+	}
+	DrawRoom.context.lineJoin = "round";
+	DrawRoom.context.strokeStyle = color;
+	DrawRoom.context.lineWidth = size;
+	DrawRoom.context.beginPath();
+	DrawRoom.context.moveTo(DrawRoom.tempqX[0], DrawRoom.tempqY[0]);
+	DrawRoom.context.lineTo(DrawRoom.tempqX[1], DrawRoom.tempqY[1]);
+	//console.log(DrawRoom.tempqX[0]+", "+DrawRoom.tempqY[0] + " to "+ DrawRoom.tempqX[1]+","+DrawRoom.tempqY[1]);
+	DrawRoom.context.closePath();
+	DrawRoom.context.stroke();
+	DrawRoom.tempqX.shift();
+	DrawRoom.tempqY.shift();
 }
 
 DrawRoom.updateScores = function(scores){
@@ -1676,7 +1702,6 @@ socket.on('userJoinMainChat', function(username){
 	$("#messages").append($("<div class='subtle'>").text(txt));
 });
 
-//updating chat when user leaves; TODO: Make this apply for all chats
 socket.on('userDisconnect', function(username){
 	var txt = username+" left the room";
 	$("#messages").append($("<div class='subtle'>").text(txt));
@@ -1705,8 +1730,8 @@ socket.on('makeRoomResponse', function(code){
 });
 
 socket.on('gameRoomCreated', function(msg){
-	//var room = JSON.parse(msg);
-	console.log("New room detected: "+msg.id);
+	var room = JSON.parse(msg);
+	console.log("New room detected: "+room.id);
 	//addRoom(room, true);
 	gameRooms.active++;
 });
@@ -1784,13 +1809,13 @@ socket.on('gameMessage', function(msg){
 });
 
 socket.on('playerNum', function(msg){
-	console.log("Player number "+msg);
+	//console.log("Player number "+msg);
 	playernum = msg;
 });
 
 //getting room info for the box
 socket.on('roomInfo', function(room){
-	console.log("Received room information");
+	//console.log("Received room information");
 	var received = JSON.parse(room);
 	$("#gameroomname").text(received.name+" ("+received.status+")");
 	roomStatus = received.status;
@@ -1896,7 +1921,6 @@ $("#chatbox_main_msg").bind('keypress', function(e){
 		this.value="";
 	}
 });
-//todo: move these into builder
 
 //bring up settings screen
 $("#settings_btn a").click(function(){
@@ -2006,21 +2030,6 @@ $("#create_game_type").change(function(){
 	}
 	list.selectpicker('refresh');
 });
-
-
-//Misc chatbox focus
-/*
-$("#messages").click(function(){
-	$("#chatbox_main_msg").focus();
-});
-*/
-/*
-//Misc chatbox hover, todo: move to css
-$(".list-group-item").hover(
-	function(){$(this).addClass('active')},
-	function(){$(this).removeClass('active')}
-	);
-*/
 
 //Correcting size for the connect 4 window.
 
