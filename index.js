@@ -1111,7 +1111,9 @@ gamerooms.createRoom = function(id, name, pw, type, numplayers, playersocket){
 					toEmit.id = drawroom.id;
 					toEmit.message = 'victory';
 					//Todo: detect tie
-					toEmit.player = drawroom.gameState.scores.indexOf(Math.max(drawroom.gameState.scores));
+					console.log(drawroom.gameState.scores);
+					console.log(drawroom.players);
+					toEmit.player = drawroom.players[drawroom.gameState.scores.indexOf(Math.max.apply(null, drawroom.gameState.scores))]; 
 					drawroom.emitToPlayers('gameMessage', JSON.stringify(toEmit));
 					return;
 				}
@@ -1150,7 +1152,7 @@ gamerooms.createRoom = function(id, name, pw, type, numplayers, playersocket){
 					drawroom.gameState.playerTurn++;
 				}
 				if(!drawroom.players[drawroom.gameState.playerTurn]){
-					drawroom.nextPlayer();
+					return drawroom.nextPlayer();
 				}else{
 					return true;
 				}

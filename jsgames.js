@@ -783,7 +783,7 @@ DrawRoom.leaveRoom = function(){
 	DrawRoom.canvas = null;
 	DrawRoom.topContext = null;
 	DrawRoom.selectedColor = "#000000";
-	DrawRoom.brushSize = 8;
+	DrawRoom.brushSize = 0;
 	DrawRoom.transactions = Array();
 	DrawRoom.currTransaction = Object();
 	DrawRoom.tool = "line";
@@ -796,7 +796,7 @@ DrawRoom.buildRoom = function(received, players){
 	DrawRoom.canvas = null;
 	DrawRoom.topContext = null;
 	DrawRoom.selectedColor = "#000000";
-	DrawRoom.brushSize = 8;
+	DrawRoom.brushSize = 4;
 	DrawRoom.transactions = Array();
 	DrawRoom.currTransaction = Object();
 	DrawRoom.tool = "line";
@@ -1000,7 +1000,7 @@ DrawRoom.buildRoom = function(received, players){
 		max: 30,
 		min: 1,
 		step: 1,
-		value: 8,
+		value: DrawRoom.brushSize,
 		change: function(event, ui){
 			DrawRoom.brushSize = $(this).slider("value");
 			//$("#drawBrushSize").text(DrawRoom.brushSize);
@@ -1353,7 +1353,7 @@ DrawRoom.gameMessage = function(msg){
 			DrawRoom.clearTopCanvas();
 			DrawRoom.clearOverlayCanvas();
 			DrawRoom.resetGuesses();
-			DrawRoom.drawVictory();
+			DrawRoom.drawVictory(r.player);
 			$("#overlaylayer").css('cursor', 'auto');
 			$("#drawOptions").css('left', '85%');
 		break;

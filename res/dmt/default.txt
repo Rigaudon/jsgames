@@ -169,11 +169,10 @@ Christmas Tree
 Charmander
 Lollipop
 Fighting
-sideburns
+Sideburns
 Redstone
 Minecraft
 Stomach
-mineplex
 Computer
 Nether Portal
 Mountain bike
@@ -198,7 +197,6 @@ Night Time
 Stop Sign
 Speedboat
 telephone
-PLumber
 Chestplate
 Playstation
 Eyepatch
