@@ -361,6 +361,8 @@ DrawRoom.killCurrentTransaction = function(){
 			}else{
 				toEmit.color = DrawRoom.currTransaction.color;
 			}
+			toEmit.arrayX.push('end');
+			toEmit.arrayY.push('end');
 			socket.emit('makeMove', JSON.stringify(toEmit));
 		}
 		DrawRoom.currTransaction = Object();
@@ -707,9 +709,13 @@ DrawRoom.processEvent = function(received){
 			DrawRoom.currTransaction = Object();
 		break;
 		case "undo":
+			DrawRoom.tempqX = [];
+			DrawRoom.tempqY = [];
 			DrawRoom.undoLastTransaction();
 		break;
 		case "clear":
+			DrawRoom.tempqX = [];
+			DrawRoom.tempqY = [];
 			DrawRoom.clearCanvas();
 		break;
 		case "line":
@@ -719,38 +725,47 @@ DrawRoom.processEvent = function(received){
 			DrawRoom.currTransaction.brushSize = received.brushSize;
 			DrawRoom.currTransaction.arrayX = received.arrayX;
 			DrawRoom.currTransaction.arrayY = received.arrayY;
+			DrawRoom.drawLine(received.arrayX, received.arrayY, received.color, received.brushSize);
+			while(DrawRoom.currTransaction.arrayX.indexOf("end") != -1){
+				var toRemove = DrawRoom.currTransaction.arrayX.indexOf("end");
+				DrawRoom.currTransaction.arrayX.splice(toRemove, 1);
+				DrawRoom.currTransaction.arrayY.splice(toRemove, 1);
+			}
 			DrawRoom.transactions.push(DrawRoom.currTransaction);
 			//Maybe prefer better implementation later
-			DrawRoom.drawLine(received.arrayX, received.arrayY, received.color, received.brushSize);
 			DrawRoom.currTransaction = Object();
 		break;
 	}
 }
 DrawRoom.tempqX = [];
 DrawRoom.tempqY = [];
+DrawRoom.lineProperties = [];
 DrawRoom.interval = 2;
 DrawRoom.drawLine = function(x, y, color, size){
 	if(!DrawRoom.context){
 		return false;
 	}
-	x.push("end");
-	y.push("end");
 	DrawRoom.tempqX = DrawRoom.tempqX.concat(x);
 	DrawRoom.tempqY = DrawRoom.tempqY.concat(y);
+	DrawRoom.lineProperties.push({
+		color: color,
+		size: size,
+	});
 	for(var i=0; i<DrawRoom.tempqX.length; i++){
 		setTimeout(function(){
-			DrawRoom.drawNextTick(color, size);
+			DrawRoom.drawNextTick();
 		}, i*DrawRoom.interval);
 	}
 }
 
-DrawRoom.drawNextTick = function(color, size){
+DrawRoom.drawNextTick = function(){
 	if(DrawRoom.tempqX.length == 0){
 		return;
 	}
 	if(DrawRoom.tempqX[0]=="end"){
 		DrawRoom.tempqX.shift();
 		DrawRoom.tempqY.shift();
+		DrawRoom.lineProperties.shift();
 		return;
 	}
 	/*
@@ -763,8 +778,8 @@ DrawRoom.drawNextTick = function(color, size){
 	*/
 	if(DrawRoom.tempqX[1] != "end"){
 		DrawRoom.context.lineJoin = "round";
-		DrawRoom.context.strokeStyle = color;
-		DrawRoom.context.lineWidth = size;
+		DrawRoom.context.strokeStyle = DrawRoom.lineProperties[0].color;
+		DrawRoom.context.lineWidth = DrawRoom.lineProperties[0].size;
 		DrawRoom.context.beginPath();
 		if(DrawRoom.tempqX.length==1){
 			DrawRoom.context.moveTo(DrawRoom.tempqX[0]-1, DrawRoom.tempqY[0]);
