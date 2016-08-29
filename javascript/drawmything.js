@@ -729,19 +729,12 @@ DrawRoom.processEvent = function(received){
 DrawRoom.tempqX = [];
 DrawRoom.tempqY = [];
 DrawRoom.interval = 2;
-DrawRoom.drawBlocking = false;
 DrawRoom.drawLine = function(x, y, color, size){
-	if(DrawRoom.drawBlocking){
-		setTimeout(function(){
-			DrawRoom.drawLine(x, y, color, size);
-		}, 400);
-	}else{
-		DrawRoom.drawBlocking = true;
-	}
-
 	if(!DrawRoom.context){
 		return false;
 	}
+	x.push("end");
+	y.push("end");
 	DrawRoom.tempqX = DrawRoom.tempqX.concat(x);
 	DrawRoom.tempqY = DrawRoom.tempqY.concat(y);
 	for(var i=0; i<DrawRoom.tempqX.length; i++){
@@ -749,32 +742,43 @@ DrawRoom.drawLine = function(x, y, color, size){
 			DrawRoom.drawNextTick(color, size);
 		}, i*DrawRoom.interval);
 	}
-	setTimeout(function(){
-		DrawRoom.drawBlocking = false;
-	}, i*DrawRoom.interval+200);
 }
 
 DrawRoom.drawNextTick = function(color, size){
-	if(DrawRoom.tempqX.length<2){
-		DrawRoom.tempqX = [];
-		DrawRoom.tempqY = [];
+	if(DrawRoom.tempqX.length == 0){
 		return;
 	}
+	if(DrawRoom.tempqX[0]=="end"){
+		DrawRoom.tempqX.shift();
+		DrawRoom.tempqY.shift();
+		return;
+	}
+	/*
 	var diff = Math.abs(DrawRoom.tempqX[0] - DrawRoom.tempqX[1]) + Math.abs(DrawRoom.tempqY[0] - DrawRoom.tempqY[1]);
 	if(diff > 50){
 		DrawRoom.tempqX.shift();
 		DrawRoom.tempqY.shift();	
 		return;
 	}
-	DrawRoom.context.lineJoin = "round";
-	DrawRoom.context.strokeStyle = color;
-	DrawRoom.context.lineWidth = size;
-	DrawRoom.context.beginPath();
-	DrawRoom.context.moveTo(DrawRoom.tempqX[0], DrawRoom.tempqY[0]);
-	DrawRoom.context.lineTo(DrawRoom.tempqX[1], DrawRoom.tempqY[1]);
+	*/
+	if(DrawRoom.tempqX[1] != "end"){
+		DrawRoom.context.lineJoin = "round";
+		DrawRoom.context.strokeStyle = color;
+		DrawRoom.context.lineWidth = size;
+		DrawRoom.context.beginPath();
+		if(DrawRoom.tempqX.length==1){
+			DrawRoom.context.moveTo(DrawRoom.tempqX[0]-1, DrawRoom.tempqY[0]);
+			DrawRoom.context.lineTo(DrawRoom.tempqX[0], DrawRoom.tempqY[0]);
+		}else{
+			DrawRoom.context.moveTo(DrawRoom.tempqX[0], DrawRoom.tempqY[0]);
+			DrawRoom.context.lineTo(DrawRoom.tempqX[1], DrawRoom.tempqY[1]);
+		}
+		DrawRoom.context.closePath();
+		DrawRoom.context.stroke();
+	}
+	
 	//console.log(DrawRoom.tempqX[0]+", "+DrawRoom.tempqY[0] + " to "+ DrawRoom.tempqX[1]+","+DrawRoom.tempqY[1]);
-	DrawRoom.context.closePath();
-	DrawRoom.context.stroke();
+	
 	DrawRoom.tempqX.shift();
 	DrawRoom.tempqY.shift();
 }

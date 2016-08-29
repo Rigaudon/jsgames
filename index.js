@@ -1181,7 +1181,6 @@ gamerooms.createRoom = function(id, name, pw, type, numplayers, playersocket){
 					return true;
 				}
 			}
-
 		break;
 	}
 	
