@@ -768,14 +768,6 @@ DrawRoom.drawNextTick = function(){
 		DrawRoom.lineProperties.shift();
 		return;
 	}
-	/*
-	var diff = Math.abs(DrawRoom.tempqX[0] - DrawRoom.tempqX[1]) + Math.abs(DrawRoom.tempqY[0] - DrawRoom.tempqY[1]);
-	if(diff > 50){
-		DrawRoom.tempqX.shift();
-		DrawRoom.tempqY.shift();	
-		return;
-	}
-	*/
 	if(DrawRoom.tempqX[1] != "end"){
 		DrawRoom.context.lineJoin = "round";
 		DrawRoom.context.strokeStyle = DrawRoom.lineProperties[0].color;
@@ -791,8 +783,6 @@ DrawRoom.drawNextTick = function(){
 		DrawRoom.context.closePath();
 		DrawRoom.context.stroke();
 	}
-	
-	//console.log(DrawRoom.tempqX[0]+", "+DrawRoom.tempqY[0] + " to "+ DrawRoom.tempqX[1]+","+DrawRoom.tempqY[1]);
 	
 	DrawRoom.tempqX.shift();
 	DrawRoom.tempqY.shift();

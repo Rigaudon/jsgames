@@ -26,3 +26,5 @@ Chat functionality:
 -timestamps
 
 Settings logged in as
+
+help menu to each game

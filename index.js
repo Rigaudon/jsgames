@@ -1001,9 +1001,10 @@ gamerooms.createRoom = function(id, name, pw, type, numplayers, playersocket){
 					if(received.value.toUpperCase() == drawroom.gameState.word.toUpperCase()){
 						//Guessed word successfully
 						toEmit.guessed = true;
+						var secondsPassed = ((new Date).getTime() - drawroom.gameState.turnStartTime) / 1000;
 						drawroom.gameState.guessed.push(playernum);
-						drawroom.gameState.scores[playernum] += 10;
-						drawroom.gameState.scores[drawroom.gameState.playerTurn] += 5;
+						drawroom.gameState.scores[playernum] += Math.ceil(10 * (1-secondsPassed/drawroom.gameState.turnTime));
+						drawroom.gameState.scores[drawroom.gameState.playerTurn] += Math.round(10/(drawroom.gameState.activePlayers-1));
 						drawroom.sendScores();
 					}else{
 						toEmit.value = received.value;
@@ -1116,6 +1117,7 @@ gamerooms.createRoom = function(id, name, pw, type, numplayers, playersocket){
 
 			drawroom.gameState.turnTime = 65;
 			drawroom.gameState.turnTimeout = undefined;
+			drawroom.gameState.turnStartTime = 0;
 			drawroom.nextTurn = function(){
 				if(drawroom.gameState.status != "Playing"){
 					clearTimeout(drawroom.gameState.turnTimeout);
@@ -1140,6 +1142,7 @@ gamerooms.createRoom = function(id, name, pw, type, numplayers, playersocket){
 					return;
 				}
 				var timeStart = (new Date).getTime();
+				drawroom.gameState.turnStartTime = timeStart;
 				var word = drawroom.wordlist[Math.floor(Math.random()*drawroom.wordlist.length)];
 				drawroom.gameState.word = word;
 				var toEmit = {message: 'yourTurn', id: drawroom.id, time: timeStart, word: word};
