@@ -1001,9 +1001,24 @@ gamerooms.createRoom = function(id, name, pw, type, numplayers, playersocket){
 					if(received.value.toUpperCase() == drawroom.gameState.word.toUpperCase()){
 						//Guessed word successfully
 						toEmit.guessed = true;
-						var secondsPassed = ((new Date).getTime() - drawroom.gameState.turnStartTime) / 1000;
+						//var secondsPassed = ((new Date).getTime() - drawroom.gameState.turnStartTime) / 1000;
+						var pointgain;
+						switch(drawroom.gameState.guessed.length){
+							case 0:
+							pointgain = 10;
+							break;
+							case 1:
+							pointgain = 7;
+							break;
+							case 2:
+							pointgain = 5;
+							break;
+							default:
+							pointgain = 3;
+							break;
+						}
 						drawroom.gameState.guessed.push(playernum);
-						drawroom.gameState.scores[playernum] += Math.ceil(10 * (1-secondsPassed/drawroom.gameState.turnTime));
+						drawroom.gameState.scores[playernum] += pointgain;
 						drawroom.gameState.scores[drawroom.gameState.playerTurn] += Math.round(10/(drawroom.gameState.activePlayers-1));
 						drawroom.sendScores();
 					}else{

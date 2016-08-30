@@ -1,21 +1,21 @@
 var DrawRoom = Object();
-DrawRoom.myTurn;
-DrawRoom.context;
-DrawRoom.canvas;
-DrawRoom.topContext;
-DrawRoom.overlayContext;
-DrawRoom.selectedColor;
-DrawRoom.brushSize;
-DrawRoom.transactions;
-DrawRoom.currTransaction;
-DrawRoom.tool;
-DrawRoom.playerScores;
-DrawRoom.numPlayers;
+DrawRoom.myTurn = undefined;
+DrawRoom.context = undefined;
+DrawRoom.canvas = undefined;
+DrawRoom.topContext = undefined;
+DrawRoom.overlayContext = undefined;
+DrawRoom.selectedColor = undefined;
+DrawRoom.brushSize = undefined;
+DrawRoom.transactions = undefined;
+DrawRoom.currTransaction = undefined;
+DrawRoom.tool = undefined;
+DrawRoom.playerScores = undefined;
+DrawRoom.numPlayers = undefined;
 DrawRoom.countdown = 5;
 DrawRoom.turnTime = 60;
 DrawRoom.timersize = 40;
 DrawRoom.timerPositionOffset = 10;
-DrawRoom.timerid;
+DrawRoom.timerid = undefined;
 
 DrawRoom.joinedRoom = function(){
 	$("#gameroombox").css('left', '-50%');
@@ -32,6 +32,7 @@ DrawRoom.joinedRoom = function(){
 	$("#creategamebox").css('top', '105%');
 	activeGame = "Draw My Thing";
 }
+
 DrawRoom.leaveRoom = function(){
 	$("#active_game_div").css('left', '150%');
 	//$("#back_to_lobby").hide();
@@ -60,6 +61,7 @@ DrawRoom.leaveRoom = function(){
 	DrawRoom.currTransaction = Object();
 	DrawRoom.tool = "line";
 }
+
 DrawRoom.buildRoom = function(received, players){
 	var active = $("#active_game_div");
 	active.empty();
@@ -321,7 +323,6 @@ DrawRoom.buildRoom = function(received, players){
 	DrawRoom.context = DrawRoom.canvas.getContext("2d");
 	DrawRoom.topContext = document.getElementById("toplayer").getContext("2d");
 	DrawRoom.overlayContext = document.getElementById("overlaylayer").getContext("2d");
-//	console.log(players);
 	for(var i=0; i<players.length; i++){
 		if(players[i]){
 			DrawRoom.addPlayer(players[i], i);
@@ -737,10 +738,12 @@ DrawRoom.processEvent = function(received){
 		break;
 	}
 }
+
 DrawRoom.tempqX = [];
 DrawRoom.tempqY = [];
 DrawRoom.lineProperties = [];
 DrawRoom.interval = 2;
+
 DrawRoom.drawLine = function(x, y, color, size){
 	if(!DrawRoom.context){
 		return false;
