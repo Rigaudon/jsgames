@@ -1053,13 +1053,11 @@ gamerooms.createRoom = function(id, name, pw, type, numplayers, playersocket){
 					case "clear":
 						toEmit.type = "clear";
 					break;
-					case "line":
-						toEmit.type = "line";
+					case "partialline":
+						toEmit.type = "partialline";
 						toEmit.arrayX = received.arrayX;
 						toEmit.arrayY = received.arrayY;
 						toEmit.color = received.color;
-						toEmit.x = received.x;
-						toEmit.y = received.y;
 						toEmit.brushSize = received.brushSize;
 					break;
 					}

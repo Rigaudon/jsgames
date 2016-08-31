@@ -124,6 +124,7 @@ DrawRoom.buildRoom = function(received, players){
 				DrawRoom.currTransaction.arrayX.push(mouseX);
 				DrawRoom.currTransaction.arrayY.push(mouseY);
 				DrawRoom.drawLineTick();
+				DrawRoom.addPartialLine(mouseX, mouseY);
 			}
 			if(DrawRoom.tool=="line"){
 				var rect = DrawRoom.canvas.getBoundingClientRect();
@@ -332,6 +333,32 @@ DrawRoom.buildRoom = function(received, players){
 	setTimeout(function(){ DrawRoom.resize(); }, 1000);
 }
 
+DrawRoom.partialMaxLen = 10;
+DrawRoom.partialX = [];
+DrawRoom.partialY = [];
+DrawRoom.addPartialLine = function(x, y){
+	if(DrawRoom.partialX.length < DrawRoom.partialMaxLen){
+		DrawRoom.partialX.push(x);
+		DrawRoom.partialY.push(y);
+	}else{
+		var toEmit = Object();
+		toEmit.id = currRoom;
+		toEmit.event = "draw";
+		toEmit.type = "partialline";
+		toEmit.arrayX = DrawRoom.partialX;
+		toEmit.arrayY = DrawRoom.partialY;
+		toEmit.brushSize = DrawRoom.brushSize;
+		if(DrawRoom.currTransaction.type=="eraser"){
+			toEmit.color = "white";
+		}else{
+			toEmit.color = DrawRoom.currTransaction.color;
+		}
+		socket.emit('makeMove', JSON.stringify(toEmit));
+		DrawRoom.partialX = [x];
+		DrawRoom.partialY = [y];
+	}
+}
+
 DrawRoom.resize = function(){
 	var p = $("#drawcanvas").position();
 	$("#toplayer").css('top', p.top);
@@ -350,11 +377,11 @@ DrawRoom.killCurrentTransaction = function(){
 			var toEmit = Object();
 			toEmit.id = currRoom;
 			toEmit.event = "draw";
-			toEmit.type = "line";
-			toEmit.arrayX = DrawRoom.currTransaction.arrayX;
-			toEmit.arrayY = DrawRoom.currTransaction.arrayY;
-			toEmit.x = DrawRoom.currTransaction.x;
-			toEmit.y = DrawRoom.currTransaction.y;
+			toEmit.type = "partialline";
+			//toEmit.arrayX = DrawRoom.currTransaction.arrayX;
+			//toEmit.arrayY = DrawRoom.currTransaction.arrayY;
+			toEmit.arrayX = DrawRoom.partialX;
+			toEmit.arrayY = DrawRoom.partialY;
 			toEmit.brushSize = DrawRoom.brushSize;
 
 			if(DrawRoom.currTransaction.type=="eraser"){
@@ -365,6 +392,8 @@ DrawRoom.killCurrentTransaction = function(){
 			toEmit.arrayX.push('end');
 			toEmit.arrayY.push('end');
 			socket.emit('makeMove', JSON.stringify(toEmit));
+			DrawRoom.partialX = [];
+			DrawRoom.partialY = [];
 		}
 		DrawRoom.currTransaction = Object();
 	}else if(DrawRoom.currTransaction.type=="fill"){
@@ -609,6 +638,7 @@ DrawRoom.gameMessage = function(msg){
 			$("#drawguess").prop('disabled', true);
 			$("#drawOptions").css('left', '85%');
 			DrawRoom.changeTurn(r.player);
+
 		break;
 		case 'opponentTurn':
 			DrawRoom.drawCountdown(DrawRoom.countdown, r.time, r.playerName);
@@ -661,6 +691,7 @@ DrawRoom.changeTurn = function(player){
 			tmp.css('font-weight', 'normal');
 		}
 	}
+	DrawRoom.transactions = [];
 }
 
 DrawRoom.revealWord = function(word){
@@ -719,76 +750,30 @@ DrawRoom.processEvent = function(received){
 			DrawRoom.tempqY = [];
 			DrawRoom.clearCanvas();
 		break;
-		case "line":
-			DrawRoom.currTransaction = Object();
-			DrawRoom.currTransaction.type = "line";
-			DrawRoom.currTransaction.color = received.color;
-			DrawRoom.currTransaction.brushSize = received.brushSize;
-			DrawRoom.currTransaction.arrayX = received.arrayX;
-			DrawRoom.currTransaction.arrayY = received.arrayY;
-			DrawRoom.drawLine(received.arrayX, received.arrayY, received.color, received.brushSize);
-			while(DrawRoom.currTransaction.arrayX.indexOf("end") != -1){
-				var toRemove = DrawRoom.currTransaction.arrayX.indexOf("end");
-				DrawRoom.currTransaction.arrayX.splice(toRemove, 1);
-				DrawRoom.currTransaction.arrayY.splice(toRemove, 1);
+		case "partialline":
+			if(!DrawRoom.currTransaction || !DrawRoom.currTransaction.arrayX){
+				DrawRoom.currTransaction = Object();
+				DrawRoom.currTransaction.arrayX = [];
+				DrawRoom.currTransaction.arrayY = [];
+				DrawRoom.currTransaction.type = "line";
+				DrawRoom.currTransaction.color = received.color;
+				DrawRoom.currTransaction.brushSize = received.brushSize;
 			}
-			DrawRoom.transactions.push(DrawRoom.currTransaction);
-			//Maybe prefer better implementation later
-			DrawRoom.currTransaction = Object();
+			
+			for(var i=0, len=received.arrayX.length; i<len; i++){
+				if(received.arrayX[i] == "end"){
+					DrawRoom.transactions.push(DrawRoom.currTransaction);
+					DrawRoom.currTransaction = Object();
+					return;
+				}else{
+					DrawRoom.currTransaction.arrayX.push(received.arrayX[i]);
+					DrawRoom.currTransaction.arrayY.push(received.arrayY[i]);
+					DrawRoom.drawLineTick();
+				}
+			}
+
 		break;
 	}
-}
-
-DrawRoom.tempqX = [];
-DrawRoom.tempqY = [];
-DrawRoom.lineProperties = [];
-DrawRoom.interval = 2;
-
-DrawRoom.drawLine = function(x, y, color, size){
-	if(!DrawRoom.context){
-		return false;
-	}
-	DrawRoom.tempqX = DrawRoom.tempqX.concat(x);
-	DrawRoom.tempqY = DrawRoom.tempqY.concat(y);
-	DrawRoom.lineProperties.push({
-		color: color,
-		size: size,
-	});
-	for(var i=0; i<DrawRoom.tempqX.length; i++){
-		setTimeout(function(){
-			DrawRoom.drawNextTick();
-		}, i*DrawRoom.interval);
-	}
-}
-
-DrawRoom.drawNextTick = function(){
-	if(DrawRoom.tempqX.length == 0){
-		return;
-	}
-	if(DrawRoom.tempqX[0]=="end"){
-		DrawRoom.tempqX.shift();
-		DrawRoom.tempqY.shift();
-		DrawRoom.lineProperties.shift();
-		return;
-	}
-	if(DrawRoom.tempqX[1] != "end"){
-		DrawRoom.context.lineJoin = "round";
-		DrawRoom.context.strokeStyle = DrawRoom.lineProperties[0].color;
-		DrawRoom.context.lineWidth = DrawRoom.lineProperties[0].size;
-		DrawRoom.context.beginPath();
-		if(DrawRoom.tempqX.length==1){
-			DrawRoom.context.moveTo(DrawRoom.tempqX[0]-1, DrawRoom.tempqY[0]);
-			DrawRoom.context.lineTo(DrawRoom.tempqX[0], DrawRoom.tempqY[0]);
-		}else{
-			DrawRoom.context.moveTo(DrawRoom.tempqX[0], DrawRoom.tempqY[0]);
-			DrawRoom.context.lineTo(DrawRoom.tempqX[1], DrawRoom.tempqY[1]);
-		}
-		DrawRoom.context.closePath();
-		DrawRoom.context.stroke();
-	}
-	
-	DrawRoom.tempqX.shift();
-	DrawRoom.tempqY.shift();
 }
 
 DrawRoom.updateScores = function(scores){
