@@ -726,14 +726,6 @@ a.disabled:active{
 	border-radius: 20px;
 }
 
-#drawOptions{
-	-moz-transition: 0.5s;
-    -o-transition: 0.5s;
-    -webkit-transition: 0.5s;
-	transition: 0.5s;
-	min-width:295px;
-}
-
 .drawplayers, .drawguesses{
 	position:absolute;
 	left:-5%;
@@ -790,7 +782,12 @@ a.disabled:active{
 	position:absolute;
 	left:85%;
 	top:0;
-	height:500px;
+	height:600px;
+	-moz-transition: 0.5s;
+    -o-transition: 0.5s;
+    -webkit-transition: 0.5s;
+	transition: 0.5s;
+	min-width:295px;
 }
 
 #drawToolsDiv button{

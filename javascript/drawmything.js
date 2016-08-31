@@ -221,7 +221,7 @@ DrawRoom.buildRoom = function(received, players){
 		toEmit.type = "clear";
 		socket.emit("makeMove", JSON.stringify(toEmit));
 		
-		DrawRoom.clearCanvas();
+		DrawRoom.clearCanvas(true);
 	});
 	tools2.append(clearTool);
 
@@ -249,6 +249,24 @@ DrawRoom.buildRoom = function(received, players){
 		basicColors.append(currColorButton);	
 	}
 	optionsBody.append(basicColors);
+
+	var secondaryColors = $("<div class='btn-group' style='width:95%'>");
+	var secondaryColorList = ["#5F5F5F", "#5B2D00", "#FFBBBB", "#7200FF", "#005AFF", "#167700", "#FFBA00", "#00C6FF", "#FF4200"];
+	for(var i=0;i<secondaryColorList.length;i++){
+		var currColorButton = $("<button type='button' class='btn btn-default'></button>");
+		currColorButton.css('background-color', secondaryColorList[i]);
+		currColorButton.css('height', '25px');
+		currColorButton.css('width', (100/secondaryColorList.length)+"%");
+		currColorButton.attr('value', secondaryColorList[i]);
+		currColorButton.click(function(){
+			$("#drawColor").attr('value', this.value);
+			$("#drawColor").css('background-color', this.value);
+			DrawRoom.selectedColor = this.value;
+		});
+		secondaryColors.append(currColorButton);	
+	}
+	optionsBody.append(secondaryColors);
+	optionsBody.append($("<span style='font-size:15px'>").text("Click below for custom color"));
 	var colorPicker = $("<input id='drawColor' value='"+DrawRoom.selectedColor+"' type='button' />");
 	optionsBody.append(colorPicker);
 
@@ -450,12 +468,14 @@ DrawRoom.drawPreviewBrush = function(x, y){
 	DrawRoom.topContext.stroke();
 }
 
-DrawRoom.clearCanvas = function(){
+DrawRoom.clearCanvas = function(push){
 	DrawRoom.context.fillStyle = "white";
 	DrawRoom.context.fillRect(0, 0, DrawRoom.context.canvas.width, DrawRoom.context.canvas.height);
-	var clearTrans = Object();
-	clearTrans.type = "clear";
-	DrawRoom.transactions.push(clearTrans);
+	if(push){
+		var clearTrans = Object();
+		clearTrans.type = "clear";
+		DrawRoom.transactions.push(clearTrans);
+	}
 }
 
 DrawRoom.clearTopCanvas = function(){
@@ -551,11 +571,14 @@ DrawRoom.doFill = function(transaction){
 }
 
 DrawRoom.redraw = function(){ 
-	if(!DrawRoom.context || DrawRoom.transactions.length==0){
+	if(!DrawRoom.context){
 		return false;
 	}
 	DrawRoom.context.fillStyle = "white";
 	DrawRoom.context.fillRect(0, 0, DrawRoom.context.canvas.width, DrawRoom.context.canvas.height);	
+	if(DrawRoom.transactions.length==0){
+		return;
+	}
 	DrawRoom.context.lineJoin = "round";	
 	var i = DrawRoom.transactions.length-1;
 	while(i>0 && DrawRoom.transactions[i].type != "clear"){
@@ -748,7 +771,7 @@ DrawRoom.processEvent = function(received){
 		case "clear":
 			DrawRoom.tempqX = [];
 			DrawRoom.tempqY = [];
-			DrawRoom.clearCanvas();
+			DrawRoom.clearCanvas(true);
 		break;
 		case "partialline":
 			if(!DrawRoom.currTransaction || !DrawRoom.currTransaction.arrayX){
