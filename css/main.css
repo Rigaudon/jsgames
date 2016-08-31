@@ -108,7 +108,7 @@ body {
 	overflow: hidden;  
 	background: repeating-linear-gradient( 135deg, #222222, #222222 50px, #282828 50px, #282828 100px );
 	min-width: 1366px;
-	min-height: 768px;
+	min-height: 900px;
 }
 .transition-fast{
 	-moz-transition: 0.3s;
