@@ -351,7 +351,7 @@ DrawRoom.buildRoom = function(received, players){
 	setTimeout(function(){ DrawRoom.resize(); }, 1000);
 }
 
-DrawRoom.partialMaxLen = 10;
+DrawRoom.partialMaxLen = 5;
 DrawRoom.partialX = [];
 DrawRoom.partialY = [];
 DrawRoom.addPartialLine = function(x, y){
