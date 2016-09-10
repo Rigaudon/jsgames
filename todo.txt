@@ -5,8 +5,6 @@ Add game options to the game create screen (dynamic)
 
 Settings logged in as
 
-Refactor server code
-
 ================================================
 Medium priority
 ================================================
@@ -31,11 +29,7 @@ Implement the validChars function (client + server) validStr on server
 
 Figure out color change of the color picker when pressing preset color button in DMT (client)
 
-Move code into modular chunks (server only)
-
 Add multiple chat rooms and/or PMs (client + server)
-
-Fix chat if still broken
 
 Chat functionality:
 -fix twitch emotes
@@ -43,7 +37,6 @@ Chat functionality:
 -timestamps
 
 help menu to each game
-
 
 NEW GAMES TO IMPLEMENT:
 
